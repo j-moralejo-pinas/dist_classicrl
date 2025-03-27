@@ -26,7 +26,10 @@ class TicTacToeEnv(gym.Env):
 
     def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None):
         if seed is None:
-            self._np_random = np.random.default_rng()
+            if self._np_random_seed is None:
+                self._np_random = np.random.default_rng()
+            else:
+                self._np_random, self._np_random_seed = np_random(self._np_random_seed)
         else:
             self._np_random, self._np_random_seed = np_random(seed)
 
