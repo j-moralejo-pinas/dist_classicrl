@@ -14,6 +14,8 @@ class OptimalQLearningBase:
 
     Attributes
     ----------
+    num_agents : int
+        Number of agents in the environment.
     state_size : int
         Size of the state space.
     action_size : int
@@ -32,6 +34,7 @@ class OptimalQLearningBase:
         Q-table for the agents.
     """
 
+    num_agents: int
     state_size: int
     action_size: int
     learning_rate: float
@@ -43,8 +46,9 @@ class OptimalQLearningBase:
 
     def __init__(
         self,
-        state_size: Union[int, np.integer],
-        action_size: Union[int, np.integer],
+        num_agents: int,
+        state_size: int,
+        action_size: int,
         learning_rate: float = 0.1,
         discount_factor: float = 0.97,
         exploration_rate: float = 1.0,
@@ -56,6 +60,8 @@ class OptimalQLearningBase:
 
         Parameters
         ----------
+        num_agents : int
+            Number of agents in the environment.
         state_size : int
             Size of the state space.
         action_size : int
@@ -71,8 +77,9 @@ class OptimalQLearningBase:
         min_exploration_rate : float, optional
             Minimum exploration rate, by default 0.01.
         """
-        self.state_size = int(state_size)
-        self.action_size = int(action_size)
+        self.num_agents = num_agents
+        self.state_size = state_size
+        self.action_size = action_size
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
@@ -290,10 +297,10 @@ class OptimalQLearningBase:
 
     def choose_actions_iter(
         self,
-        states: NDArray[np.int32],
+        states: Dict[Any, int],
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
-    ) -> NDArray[np.int32]:
+        action_masks: Optional[Dict[Any, List[int]]] = None,
+    ) -> Dict[Any, int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -312,20 +319,14 @@ class OptimalQLearningBase:
             Actions chosen for all agents.
         """
         if action_masks is None:
-            return np.fromiter(
-                (self.choose_action(state, deterministic) for state in states),
-                dtype=np.int32,
-                count=len(states),
-            )
+            return {
+                agent: self.choose_action(state, deterministic) for agent, state in states.items()
+            }
         else:
-            return np.fromiter(
-                (
-                    self.choose_masked_action(state, action_mask, deterministic)
-                    for state, action_mask in zip(states, action_masks)
-                ),
-                dtype=np.int32,
-                count=len(states),
-            )
+            return {
+                agent: self.choose_masked_action(state, action_masks[agent], deterministic)
+                for agent, state in states.items()
+            }
 
     def choose_action_vec(
         self,
@@ -391,10 +392,10 @@ class OptimalQLearningBase:
 
     def choose_actions_vec_iter(
         self,
-        states: NDArray[np.int32],
+        states: Dict[Any, int],
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
-    ) -> NDArray[np.int32]:
+        action_masks: Optional[Dict[Any, List[int]]] = None,
+    ) -> Dict[Any, int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -413,26 +414,21 @@ class OptimalQLearningBase:
             Actions chosen for all agents.
         """
         if action_masks is None:
-            return np.fromiter(
-                (self.choose_action_vec(state, deterministic) for state in states),
-                dtype=np.int32,
-                count=len(states),
-            )
+            return {
+                agent: self.choose_action_vec(state, deterministic)
+                for agent, state in states.items()
+            }
         else:
-            return np.fromiter(
-                (
-                    self.choose_masked_action_vec(state, action_mask, deterministic)
-                    for state, action_mask in zip(states, action_masks)
-                ),
-                dtype=np.int32,
-                count=len(states),
-            )
+            return {
+                agent: self.choose_masked_action_vec(state, action_masks[agent], deterministic)
+                for agent, state in states.items()
+            }
 
     def choose_actions_vec(
         self,
-        states: NDArray[np.int32],
+        states: Dict[Any, int],
         deterministic: bool = False,
-    ) -> NDArray[np.int32]:
+    ) -> Dict[Any, int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -449,11 +445,13 @@ class OptimalQLearningBase:
             Actions chosen for all agents.
         """
 
-        max_q_values = np.max(self.q_table[states], axis=1, keepdims=True)
+        np_states = np.fromiter(states.values(), dtype=np.int32, count=len(states))
+
+        max_q_values = np.max(self.q_table[np_states], axis=1, keepdims=True)
 
         if not deterministic:
-            explore_flags = np.random.rand(states.size) < self.exploration_rate
-            exploratory_actions = np.random.randint(self.action_size, size=states.size)
+            explore_flags = np.random.rand(np_states.size) < self.exploration_rate
+            exploratory_actions = np.random.randint(self.action_size, size=np_states.size)
             chosen_actions_per_state = np.fromiter(
                 (
                     (
@@ -462,34 +460,39 @@ class OptimalQLearningBase:
                         else exploratory_action
                     )
                     for q_value, max_q_value, explore_flag, exploratory_action in zip(
-                        self.q_table[states],
+                        self.q_table[np_states],
                         max_q_values.tolist(),
                         explore_flags.tolist(),
                         exploratory_actions.tolist(),
                     )
                 ),
                 dtype=np.int32,
-                count=states.size,
+                count=np_states.size,
             )
-            return chosen_actions_per_state
+            return {
+                agent: action
+                for agent, action in zip(states.keys(), chosen_actions_per_state.tolist())
+            }
+        else:
+            best_actions_per_state = np.fromiter(
+                (
+                    random.choice(np.where(q_value == max_q_value)[0])
+                    for q_value, max_q_value in zip(self.q_table[np_states], max_q_values.tolist())
+                ),
+                dtype=np.int32,
+                count=np_states.size,
+            )
 
-        best_actions_per_state = np.fromiter(
-            (
-                random.choice(np.where(q_value == max_q_value)[0])
-                for q_value, max_q_value in zip(self.q_table[states], max_q_values.tolist())
-            ),
-            dtype=np.int32,
-            count=states.size,
-        )
-
-        return best_actions_per_state
+        return {
+            agent: action for agent, action in zip(states.keys(), best_actions_per_state.tolist())
+        }
 
     def choose_masked_actions_vec(
         self,
-        states: NDArray[np.int32],
-        action_masks: NDArray[np.int32],
+        states: Dict[Any, int],
+        action_masks: Dict[Any, List[int]],
         deterministic: bool = False,
-    ) -> NDArray[np.int32]:
+    ) -> Dict[Any, int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -507,17 +510,19 @@ class OptimalQLearningBase:
         NDArray[np.int32]
             Actions chosen for all agents.
         """
+        np_states = np.fromiter(states.values(), dtype=np.int32, count=len(states))
+        np_action_masks = np.array(action_masks.values())
 
-        assert action_masks.shape == (
-            states.size,
+        assert np_action_masks.shape == (
+            np_states.size,
             self.action_size,
         ), "Action masks must match the number of states and actions."
 
-        masked_q_values_vec = np.where(action_masks, self.q_table[states], -np.inf)
+        masked_q_values_vec = np.where(np_action_masks, self.q_table[np_states], -np.inf)
         max_q_values = np.max(masked_q_values_vec, axis=1, keepdims=True)
 
         if not deterministic:
-            explore_flags = np.random.rand(states.size) < self.exploration_rate
+            explore_flags = np.random.rand(np_states.size) < self.exploration_rate
             chosen_actions_per_state = np.fromiter(
                 (
                     (
@@ -526,30 +531,38 @@ class OptimalQLearningBase:
                         else random.choice(np.where(mask)[0])
                     )
                     for masked_q_value, max_q_value, mask, explore_flag in zip(
-                        masked_q_values_vec, max_q_values.tolist(), action_masks, explore_flags
+                        masked_q_values_vec, max_q_values.tolist(), np_action_masks, explore_flags
                     )
                 ),
                 dtype=np.int32,
-                count=states.size,
+                count=np_states.size,
             )
-            return chosen_actions_per_state
-
-        best_actions_per_state = np.fromiter(
-            (
-                random.choice(np.where(masked_q_value == max_q_value)[0])
-                for masked_q_value, max_q_value in zip(masked_q_values_vec, max_q_values.tolist())
-            ),
-            dtype=np.int32,
-            count=states.size,
-        )
-        return best_actions_per_state
+            return {
+                agent: action
+                for agent, action in zip(states.keys(), chosen_actions_per_state.tolist())
+            }
+        else:
+            best_actions_per_state = np.fromiter(
+                (
+                    random.choice(np.where(masked_q_value == max_q_value)[0])
+                    for masked_q_value, max_q_value in zip(
+                        masked_q_values_vec, max_q_values.tolist()
+                    )
+                ),
+                dtype=np.int32,
+                count=np_states.size,
+            )
+            return {
+                agent: action
+                for agent, action in zip(states.keys(), best_actions_per_state.tolist())
+            }
 
     def choose_actions(
         self,
-        states: NDArray[np.int32],
+        states: Dict[Any, int],
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
-    ) -> NDArray[np.int32]:
+        action_masks: Optional[Dict[Any, List[int]]] = None,
+    ) -> Dict[Any, int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -611,8 +624,7 @@ class OptimalQLearningBase:
         action: int,
         reward: float,
         next_state: int,
-        terminated: bool,
-        next_action_mask: Optional[NDArray[np.int32]] = None,
+        terminated: bool,  # Add terminated parameter
     ) -> None:
         """
         Update Q-table based on the agent's experience.
@@ -630,26 +642,18 @@ class OptimalQLearningBase:
         terminated : bool
             Whether the episode has terminated.
         """
-        if next_action_mask is None:
-            max_next_q_value = 0 if terminated else np.max(self.get_state_q_values(next_state))
-        else:
-            max_next_q_value = (
-                0
-                if terminated
-                else np.max(self.get_state_q_values(next_state)[np.where(next_action_mask)])
-            )
+        max_next_q_value = 0 if terminated else np.max(self.get_state_q_values(next_state))
         target = reward + self.discount_factor * max_next_q_value
         prediction = self.get_q_value(state, action)
         self.add_q_value(state, action, self.learning_rate * (target - prediction))
 
     def learn_iter(
         self,
-        states: NDArray[np.int32],
-        actions: NDArray[np.int32],
-        rewards: NDArray[np.float32],
-        next_states: NDArray[np.int32],
-        terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        states: Dict[Any, int],
+        actions: Dict[Any, int],
+        rewards: Dict[Any, float],
+        next_states: Dict[Any, int],
+        terminated: Dict[Any, bool],
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -665,33 +669,18 @@ class OptimalQLearningBase:
         next_states : NDArray[np.int32]
             Next states of all agents.
         """
-        if next_action_masks is None:
-
-            for state, action, reward, next_state, term in zip(
-                states, actions, rewards, next_states, terminated
-            ):
-                self.single_learn(state, action, reward, next_state, term)
-        else:
-            for state, action, reward, next_state, term, next_action_mask in zip(
-                states, actions, rewards, next_states, terminated, next_action_masks
-            ):
-                self.single_learn(
-                    state,
-                    action,
-                    reward,
-                    next_state,
-                    term,
-                    next_action_mask,
-                )
+        for key in states:
+            self.single_learn(
+                states[key], actions[key], rewards[key], next_states[key], terminated[key]
+            )
 
     def learn_vec(
         self,
-        states: NDArray[np.int32],
-        actions: NDArray[np.int32],
-        rewards: NDArray[np.float32],
-        next_states: NDArray[np.int32],
-        terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        states: Dict[Any, int],
+        actions: Dict[Any, int],
+        rewards: Dict[Any, float],
+        next_states: Dict[Any, int],
+        terminated: Dict[Any, bool],
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -707,7 +696,13 @@ class OptimalQLearningBase:
         next_states : List[int]
             Next states of all agents.
         """
-        self._learn_vec(states, actions, rewards, next_states, terminated, next_action_masks)
+
+        np_states = np.fromiter(states.values(), dtype=np.int32, count=len(states))
+        np_actions = np.fromiter(actions.values(), dtype=np.int32, count=len(actions))
+        np_rewards = np.fromiter(rewards.values(), dtype=np.float32, count=len(rewards))
+        np_next_states = np.fromiter(next_states.values(), dtype=np.int32, count=len(next_states))
+        np_terminated = np.fromiter(terminated.values(), dtype=np.bool, count=len(terminated))
+        self._learn_vec(np_states, np_actions, np_rewards, np_next_states, np_terminated)
 
     def _learn_vec(
         self,
@@ -716,7 +711,6 @@ class OptimalQLearningBase:
         rewards: NDArray[np.float32],
         next_states: NDArray[np.int32],
         terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -732,24 +726,18 @@ class OptimalQLearningBase:
         next_states : NDArray[np.int32]
             Next states of all agents.
         """
-        if next_action_masks is None:
-            max_next_q_values = np.max(self.get_states_q_values(next_states), axis=1)
-        else:
-            max_next_q_values = np.max(
-                np.where(next_action_masks, self.get_states_q_values(next_states), -np.inf), axis=1
-            )
+        max_next_q_values = np.max(self.get_states_q_values(next_states), axis=1)
         targets = rewards + self.discount_factor * max_next_q_values * (1 - terminated)
         predictions = self.get_q_values(states, actions)
         self.add_q_values(states, actions, self.learning_rate * (targets - predictions))
 
     def learn(
         self,
-        states: NDArray[np.int32],
-        actions: NDArray[np.int32],
-        rewards: NDArray[np.float32],
-        next_states: NDArray[np.int32],
-        terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        states: Dict[Any, int],
+        actions: Dict[Any, int],
+        rewards: Dict[Any, float],
+        next_states: Dict[Any, int],
+        terminated: Dict[Any, bool],
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -766,7 +754,7 @@ class OptimalQLearningBase:
             Next states of all agents.
         """
         if len(states) > 10:
-            self.learn_vec(states, actions, rewards, next_states, terminated, next_action_masks)
+            self.learn_vec(states, actions, rewards, next_states, terminated)
         else:
-            self.learn_iter(states, actions, rewards, next_states, terminated, next_action_masks)
+            self.learn_iter(states, actions, rewards, next_states, terminated)
         self.update_explore_rate()

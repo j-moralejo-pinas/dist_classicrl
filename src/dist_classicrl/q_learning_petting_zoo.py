@@ -1,14 +1,10 @@
 """This module contains the implementation of multi-agent Q-learning for the Repsol project."""
 
-from re import L
-import stat
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 from pettingzoo import ParallelEnv
-from gymnasium.vector import SyncVectorEnv
-from dist_classicrl.custom_env import DistClassicRLEnv
 from dist_classicrl.q_learning_optimal import OptimalQLearningBase
 
 
@@ -18,6 +14,8 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
     Attributes
     ----------
+    num_agents : int
+        Number of agents in the environment.
     state_size : int
         Size of the state space.
     action_size : int
@@ -36,6 +34,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
         Shared memory array for the Q-table.
     """
 
+    num_agents: int
     state_size: int
     action_size: int
     learning_rate: float
@@ -47,9 +46,9 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
     def train(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: ParallelEnv,
         steps: int,
-        val_env: Union[DistClassicRLEnv, SyncVectorEnv],
+        val_env: ParallelEnv,
         val_every_n_steps: int,
         val_steps: Optional[int],
         val_episodes: Optional[int],
@@ -73,43 +72,34 @@ class SingleEnvQLearning(OptimalQLearningBase):
         assert (val_steps is None) ^ (
             val_episodes is None
         ), "Either val_steps or val_episodes should be provided."
-
-        states, infos = env.reset()
         reward_history = []
+        agent_reward_history = {}
         val_reward_history = []
-        val_agent_reward_history = []
-        agent_reward_history = np.zeros(len(states), dtype=np.float32)
+        val_agent_reward_history = {}
+        states, infos = env.reset()
         for step in range(steps):
-            if isinstance(states, dict):
-                actions = self.choose_actions(
-                    states=states["observation"], action_masks=states["action_mask"]
-                )
-            else:
-                actions = self.choose_actions(states)
 
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
+            actions = self.choose_actions(states)
+            next_states, rewards, terminated, truncated, infos = env.step(actions)
 
-            agent_reward_history += rewards
+            for agent, reward in rewards.items():
+                if agent not in agent_reward_history:
+                    agent_reward_history[agent] = [0]
+                agent_reward_history[agent][-1] += reward
 
-            if isinstance(next_states, dict):
-                assert isinstance(states, dict)
-                self.learn(
-                    states["observation"],
-                    actions,
-                    rewards,
-                    next_states["observation"],
-                    terminateds,
-                    next_states["action_mask"],
-                )
-            else:
-                assert not isinstance(states, dict)
-                self.learn(states, actions, rewards, next_states, terminateds)
+            self.learn(states, actions, rewards, next_states, terminated)
             states = next_states
 
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
-                if terminated or truncated:
-                    reward_history.append(agent_reward_history[i])
-                    agent_reward_history[i] = 0
+            if not states:
+                states, infos = env.reset()
+                reward_history.append(sum(agent_reward_history.values()))
+                for agent, reward in agent_reward_history.items():
+                    if agent not in val_agent_reward_history:
+                        val_agent_reward_history[agent] = []
+                    agent_reward_history[agent].append(0)
+            else:
+                for agent, reward in rewards.items():
+                    agent_reward_history[agent][-1] += reward
 
             if (step + 1) % val_every_n_steps == 0:
                 val_total_rewards, val_agent_rewards = 0.0, {}
@@ -121,14 +111,17 @@ class SingleEnvQLearning(OptimalQLearningBase):
                     )
 
                 val_reward_history.append(val_total_rewards)
-                val_agent_reward_history.append(val_agent_rewards)
+                for agent, reward in val_agent_rewards.items():
+                    if agent not in val_agent_reward_history:
+                        val_agent_reward_history[agent] = []
+                    val_agent_reward_history[agent].append(reward)
                 print(f"Step {step + 1}, Eval total rewards: {val_total_rewards}")
 
     def evaluate_steps(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: SyncVe,
         steps: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> Tuple[float, Dict[Any, float]]:
         """
         Evaluate the agent in the environment for a given number of steps.
 
@@ -144,33 +137,25 @@ class SingleEnvQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
-        states, infos = env.reset(seed=42)
-        agent_rewards = np.zeros(len(states), dtype=np.float32)
-        reward_history = []
+        agent_rewards = {}
+        states, infos = env.reset()
         for _ in range(steps):
-            if isinstance(states, dict):
-                actions = self.choose_actions(
-                    states=states["observation"],
-                    action_masks=states["action_mask"],
-                    deterministic=True,
-                )
-            else:
-                actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
-            agent_rewards += rewards
+            actions = self.choose_actions(states, deterministic=True)
+            next_states, rewards, terminated, truncated, infos = env.step(actions)
+            for agent, reward in rewards.items():
+                if agent not in agent_rewards:
+                    agent_rewards[agent] = 0
+                agent_rewards[agent] += reward
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
-                if terminated or truncated:
-                    reward_history.append(agent_rewards[i])
-                    agent_rewards[i] = 0
-        return sum(reward_history), reward_history
+            if not states:
+                states, infos = env.reset()
+        return sum(agent_rewards.values()), agent_rewards
 
     def evaluate_episodes(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: ParallelEnv,
         episodes: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> Tuple[float, Dict[Any, float]]:
         """
         Evaluate the agent in the environment for a given number of episodes.
 
@@ -186,27 +171,22 @@ class SingleEnvQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
-        states, infos = env.reset(seed=42)
-        agent_rewards = np.zeros(len(states), dtype=np.float32)
-        reward_history = []
+        agent_rewards = {}
+        states, infos = env.reset()
         episode = 0
         while episode < episodes:
-            if isinstance(states, dict):
-                actions = self.choose_actions(
-                    states=states["observation"],
-                    action_masks=states["action_mask"],
-                    deterministic=True,
-                )
-            else:
-                actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
-            agent_rewards += rewards
+            actions = self.choose_actions(states, deterministic=True)
+            next_states, rewards, terminated, truncated, infos = env.step(actions)
+            for agent, reward in rewards.items():
+                if agent not in agent_rewards:
+                    agent_rewards[agent] = 0
+                agent_rewards[agent] += reward
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
-                if terminated or truncated:
-                    episode += 1
-                    reward_history.append(agent_rewards[i])
-                    agent_rewards[i] = 0
+            if not states:
+                episode += 1
+                states, infos = env.reset()
 
-        return sum(reward_history), reward_history
+        for agent in agent_rewards:
+            agent_rewards[agent] /= episodes
+
+        return sum(agent_rewards.values()), agent_rewards

@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from pettingzoo import ParallelEnv
-from q_learning import SingleEnvQLearning
+from dist_classicrl.custom_env import DistClassicRLEnv
+from dist_classicrl.q_learning import SingleEnvQLearning
 
 
 class ParallelQLearning(SingleEnvQLearning):
@@ -57,9 +57,9 @@ class ParallelQLearning(SingleEnvQLearning):
 
     def train(
         self,
-        envs: List[ParallelEnv],
+        envs: List[DistClassicRLEnv],
         steps: int,
-        val_env: ParallelEnv,
+        val_env: DistClassicRLEnv,
         val_every_n_steps: int,
         val_steps: Optional[int],
         val_episodes: Optional[int],
@@ -129,7 +129,7 @@ class ParallelQLearning(SingleEnvQLearning):
 
     def run_steps(
         self,
-        env: ParallelEnv,
+        env: DistClassicRLEnv,
         num_steps: int,
         rewards_queue: mp.Queue,
         sm_name: str,
