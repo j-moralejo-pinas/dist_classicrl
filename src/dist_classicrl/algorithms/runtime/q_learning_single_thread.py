@@ -1,18 +1,16 @@
 """This module contains the implementation of multi-agent Q-learning for the Repsol project."""
 
-from re import L
-import stat
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from numpy.typing import NDArray
-from pettingzoo import ParallelEnv
 from gymnasium.vector import SyncVectorEnv
-from dist_classicrl.custom_env import DistClassicRLEnv
-from dist_classicrl.q_learning_optimal import OptimalQLearningBase
+from numpy.typing import NDArray
+
+from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
+from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 
-class SingleEnvQLearning(OptimalQLearningBase):
+class SingleThreadQLearning(OptimalQLearningBase):
     """
     Single environment Q-learning agent.
 
@@ -75,10 +73,14 @@ class SingleEnvQLearning(OptimalQLearningBase):
         ), "Either val_steps or val_episodes should be provided."
 
         states, infos = env.reset()
+        if isinstance(states, dict):
+            n_agents = len(states["observation"])
+        else:
+            n_agents = len(states)
         reward_history = []
         val_reward_history = []
         val_agent_reward_history = []
-        agent_reward_history = np.zeros(len(states), dtype=np.float32)
+        agent_rewards = np.zeros(n_agents, dtype=np.float32)
         for step in range(steps):
             if isinstance(states, dict):
                 actions = self.choose_actions(
@@ -89,7 +91,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
 
-            agent_reward_history += rewards
+            agent_rewards += rewards
 
             if isinstance(next_states, dict):
                 assert isinstance(states, dict)
@@ -108,8 +110,8 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
             for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
                 if terminated or truncated:
-                    reward_history.append(agent_reward_history[i])
-                    agent_reward_history[i] = 0
+                    reward_history.append(agent_rewards[i])
+                    agent_rewards[i] = 0
 
             if (step + 1) % val_every_n_steps == 0:
                 val_total_rewards, val_agent_rewards = 0.0, {}
@@ -122,7 +124,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
-                print(f"Step {step + 1}, Eval total rewards: {val_total_rewards}")
+                print(f"Step {step}, Eval total rewards: {val_total_rewards}")
 
     def evaluate_steps(
         self,
@@ -146,7 +148,11 @@ class SingleEnvQLearning(OptimalQLearningBase):
         """
 
         states, infos = env.reset(seed=42)
-        agent_rewards = np.zeros(len(states), dtype=np.float32)
+        if isinstance(states, dict):
+            n_agents = len(states["observation"])
+        else:
+            n_agents = len(states)
+        agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         for _ in range(steps):
             if isinstance(states, dict):
@@ -188,7 +194,11 @@ class SingleEnvQLearning(OptimalQLearningBase):
         """
 
         states, infos = env.reset(seed=42)
-        agent_rewards = np.zeros(len(states), dtype=np.float32)
+        if isinstance(states, dict):
+            n_agents = len(states["observation"])
+        else:
+            n_agents = len(states)
+        agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         episode = 0
         while episode < episodes:

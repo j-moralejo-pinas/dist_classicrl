@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
-from dist_classicrl.custom_env import DistClassicRLEnv
-from dist_classicrl.q_learning import SingleEnvQLearning
+from dist_classicrl.environments.custom_env import DistClassicRLEnv
+from dist_classicrl.algorithms.runtime.q_learning_single_thread import SingleEnvQLearning
 from gymnasium.vector import SyncVectorEnv
 
 comm = MPI.COMM_WORLD
