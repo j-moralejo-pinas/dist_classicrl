@@ -1,14 +1,17 @@
 """This module contains the implementation of multi-agent Q-learning for the Repsol project."""
 
+# TODO: Fix shared memory staying open after Ctrl+C
+
 import multiprocessing as mp
-from multiprocessing import connection, shared_memory
+from multiprocessing import Value, connection, shared_memory
+from multiprocessing.sharedctypes import Synchronized
 from multiprocessing.synchronize import Lock
 from typing import Dict, List, Optional, Tuple, Union
 
-from gymnasium.vector import SyncVectorEnv
-
 import numpy as np
+from gymnasium.vector import SyncVectorEnv
 from numpy.typing import NDArray
+
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
@@ -45,17 +48,34 @@ class ParallelQLearning(OptimalQLearningBase):
     learning_rate: float
     discount_factor: float
     exploration_rate: float
+    _exploration_rate: Synchronized
     exploration_decay: float
     min_exploration_rate: float
     q_table: NDArray[np.float32]
     sm: shared_memory.SharedMemory
     sm_lock: Lock
+    er_lock: Lock
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.sm = shared_memory.SharedMemory(name="q_table", create=True, size=self.q_table.nbytes)
         self.q_table = np.ndarray(self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf)
         self.sm_lock = mp.Lock()
+        self.er_lock = mp.Lock()
+        self._exploration_rate = Value("f", self.exploration_rate)
+
+    def update_explore_rate(self) -> None:
+        """
+        Update the exploration rate.
+        This method overrides the base class method to ensure thread safety
+        when updating the exploration rate in a multi-agent setting.
+        """
+        with self.er_lock:
+            self._exploration_rate.value = max(
+                self._exploration_rate.value * self.exploration_decay,
+                self.min_exploration_rate,
+            )
+            self.exploration_rate = self._exploration_rate.value
 
     def train(
         self,
@@ -134,7 +154,9 @@ class ParallelQLearning(OptimalQLearningBase):
                 if val_steps is not None:
                     val_total_rewards, val_agent_rewards = self.evaluate_steps(val_env, val_steps)
                 elif val_episodes is not None:
-                    val_total_rewards, val_agent_rewards = self.evaluate_episodes(val_env, val_episodes)
+                    val_total_rewards, val_agent_rewards = self.evaluate_episodes(
+                        val_env, val_episodes
+                    )
 
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
@@ -142,7 +164,6 @@ class ParallelQLearning(OptimalQLearningBase):
         finally:
             self.sm.close()
             self.sm.unlink()
-
 
     def run_steps(
         self,
@@ -216,7 +237,6 @@ class ParallelQLearning(OptimalQLearningBase):
                 assert not isinstance(states, dict)
                 with sm_lock:
                     self.learn(states, actions, rewards, next_states, terminateds)
-
             states = next_states
 
             for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):

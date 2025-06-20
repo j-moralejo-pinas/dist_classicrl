@@ -124,7 +124,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
-                print(f"Step {step}, Eval total rewards: {val_total_rewards}")
+                print(f"Step {step + 1}, Eval total rewards: {val_total_rewards}")
 
     def evaluate_steps(
         self,

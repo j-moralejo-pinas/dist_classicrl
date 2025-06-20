@@ -1,10 +1,12 @@
 from typing import Any, Dict, Union
+
 import gymnasium
 import gymnasium.spaces.dict
-from dist_classicrl.utils import decode_to_multi_discrete, encode_multi_discrete, compute_radix
 import numpy as np
-from numpy.typing import NDArray
 from gymnasium import spaces
+from numpy.typing import NDArray
+
+from dist_classicrl.utils import compute_radix, decode_to_multi_discrete, encode_multi_discrete
 
 
 class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
