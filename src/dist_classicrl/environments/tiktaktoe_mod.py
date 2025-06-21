@@ -1,7 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import gymnasium as gym
-from gymnasium.utils.seeding import np_random
 import numpy as np
+from gymnasium.utils.seeding import np_random
 
 
 class TicTacToeEnv(gym.Env):
@@ -13,7 +14,7 @@ class TicTacToeEnv(gym.Env):
     machine_mark: int
 
     def __init__(self):
-        super(TicTacToeEnv, self).__init__()
+        super().__init__()
         self.action_space = gym.spaces.Discrete(9)
 
         self.observation_space = gym.spaces.Dict(
@@ -22,9 +23,14 @@ class TicTacToeEnv(gym.Env):
                 "action_mask": gym.spaces.MultiDiscrete([2] * 9),
             }
         )
-        self.reset()
+        # self.reset()
 
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None):
+    def reset(
+        self,
+        *,
+        seed: Optional[int] = None,
+        options: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
         if seed is None:
             if self._np_random_seed is None:
                 self._np_random = np.random.default_rng()
@@ -47,7 +53,9 @@ class TicTacToeEnv(gym.Env):
             self._apply_move(move, self.machine_mark)
         return self._get_obs(), {}
 
-    def _apply_move(self, move: int, mark: int):
+    def _apply_move(
+        self, move: int, mark: int
+    ) -> Optional[Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]]:
         row, col = divmod(move, 3)
         assert self.board[row, col] == 0, "Invalid move."
         self.board[row, col] = mark
@@ -58,7 +66,7 @@ class TicTacToeEnv(gym.Env):
             return self._get_obs(), 0, True, False, {}
         return None
 
-    def step(self, action: int):
+    def step(self, action: int) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         """ """
         # Agent's move.
         result = self._apply_move(action, self.agent_mark)
@@ -66,27 +74,31 @@ class TicTacToeEnv(gym.Env):
             return result
 
         # Machine's move.
-        valid_moves = self._get_valid_moves()
-        assert valid_moves, "There should be at least one valid move."
-        machine_move = self._np_random.choice(valid_moves)
+        machine_move = self._get_machine_move()
         result = self._apply_move(machine_move, self.machine_mark)
         if result is not None:
             return result
 
         return self._get_obs(), 0, False, False, {}
 
-    def _get_valid_moves(self):
+    def _get_machine_move(self) -> int:
+        # Get a random valid move for the machine.
+        valid_moves = self._get_valid_moves()
+        assert valid_moves, "There should be at least one valid move."
+        return self._np_random.choice(valid_moves)
+
+    def _get_valid_moves(self) -> List[int]:
         # Return a list of indices (0-8) where the board is empty.
         return [i for i in range(9) if self.board.flat[i] == 0]
 
-    def _get_obs(self):
+    def _get_obs(self) -> Dict[str, np.ndarray]:
         # Flatten the board to a (9,) vector.
         obs_board = self.board.flatten()
         # Create the action mask: 1 indicates an empty cell (legal move), 0 otherwise.
         action_mask = np.fromiter((obs_board[i] == 0 for i in range(9)), dtype=np.int8, count=9)
         return {"observation": obs_board, "action_mask": action_mask}
 
-    def _check_winner(self):
+    def _check_winner(self) -> Optional[int]:
         b = self.board
         # Check rows.
         for i in range(3):
@@ -101,10 +113,10 @@ class TicTacToeEnv(gym.Env):
             return b[0, 2]
         return None
 
-    def render(self, mode="human"):
+    def render(self, mode="human") -> None:
         symbol = {0: " ", 1: "X", 2: "O"}
         board_str = "\n".join("|".join(symbol[val] for val in row) for row in self.board)
         print(board_str)
 
-    def close(self):
+    def close(self) -> None:
         pass
