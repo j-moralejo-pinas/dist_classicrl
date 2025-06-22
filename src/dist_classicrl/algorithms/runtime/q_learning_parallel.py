@@ -54,14 +54,16 @@ class ParallelQLearning(OptimalQLearningBase):
     q_table: NDArray[np.float32]
     sm: shared_memory.SharedMemory
     sm_lock: Lock
-    er_lock: Lock
+
+    sm_name: str = "q_table"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.sm = shared_memory.SharedMemory(name="q_table", create=True, size=self.q_table.nbytes)
+        self.sm = shared_memory.SharedMemory(
+            name=self.sm_name, create=True, size=self.q_table.nbytes
+        )
         self.q_table = np.ndarray(self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf)
         self.sm_lock = mp.Lock()
-        self.er_lock = mp.Lock()
         self._exploration_rate = Value("f", self.exploration_rate)
 
     def update_explore_rate(self) -> None:
@@ -70,12 +72,11 @@ class ParallelQLearning(OptimalQLearningBase):
         This method overrides the base class method to ensure thread safety
         when updating the exploration rate in a multi-agent setting.
         """
-        with self.er_lock:
-            self._exploration_rate.value = max(
-                self._exploration_rate.value * self.exploration_decay,
-                self.min_exploration_rate,
-            )
-            self.exploration_rate = self._exploration_rate.value
+        self._exploration_rate.value = max(
+            self._exploration_rate.value * self.exploration_decay,
+            self.min_exploration_rate,
+        )
+        self.exploration_rate = self._exploration_rate.value
 
     def train(
         self,
@@ -125,8 +126,8 @@ class ParallelQLearning(OptimalQLearningBase):
                             env,
                             int(val_every_n_steps / len(envs)),
                             reward_queue,
-                            self.sm.name,
                             self.sm_lock,
+                            self._exploration_rate,
                             child_conn,
                             curr_state,
                         ),
@@ -170,8 +171,8 @@ class ParallelQLearning(OptimalQLearningBase):
         env: Union[DistClassicRLEnv, SyncVectorEnv],
         num_steps: int,
         rewards_queue: mp.Queue,
-        sm_name: str,
         sm_lock: Lock,
+        exploration_rate_value: Synchronized,
         curr_state_pipe: Optional[connection.Connection],
         curr_state: Optional[Dict] = None,
     ) -> None:
@@ -193,7 +194,9 @@ class ParallelQLearning(OptimalQLearningBase):
         return_queue : mp.Queue
             Queue to collect total rewards from the environment.
         """
-        self.sm = shared_memory.SharedMemory(name=sm_name)
+        self.sm_lock = sm_lock
+        self._exploration_rate = exploration_rate_value
+        self.sm = shared_memory.SharedMemory(name=self.sm_name)
         self.q_table = np.ndarray(self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf)
 
         if curr_state is None:
@@ -210,12 +213,12 @@ class ParallelQLearning(OptimalQLearningBase):
 
         for _ in range(num_steps):
             if isinstance(states, dict):
-                with sm_lock:
+                with self.sm_lock:
                     actions = self.choose_actions(
                         states=states["observation"], action_masks=states["action_mask"]
                     )
             else:
-                with sm_lock:
+                with self.sm_lock:
                     actions = self.choose_actions(states)
 
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
@@ -224,7 +227,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
             if isinstance(next_states, dict):
                 assert isinstance(states, dict)
-                with sm_lock:
+                with self.sm_lock:
                     self.learn(
                         states["observation"],
                         actions,
@@ -235,7 +238,7 @@ class ParallelQLearning(OptimalQLearningBase):
                     )
             else:
                 assert not isinstance(states, dict)
-                with sm_lock:
+                with self.sm_lock:
                     self.learn(states, actions, rewards, next_states, terminateds)
             states = next_states
 
