@@ -1,7 +1,5 @@
 import timeit
-import numpy as np
-import random
-import sys
+
 
 # Define the grid
 action_sizes = [2, 10, 100, 1000, 10000]
@@ -191,7 +189,7 @@ if __name__ == "__main__":
     output_filename = "det_true_mask.txt"
 
     code = [
-"""
+        """
 a = np.fromiter([ql.choose_masked_action(state, mask, deterministic=True) for state, mask in zip(states, action_masks)], dtype=np.int32)
 """,
         """
@@ -203,7 +201,7 @@ a = ql.choose_masked_actions_vec(states_np, action_masks_np, deterministic=True)
     ]
 
     code_2 = [
-                """
+        """
 ql.learn(states, actions, rewards, next_states)
 """,
         """
@@ -211,7 +209,7 @@ ql.learn(states_np.tolist(), actions_np.tolist(), rewards_np.tolist(), next_stat
 """,
         """
 qn.learn(states_np, actions_np, rewards_np, next_states_np)
-"""
+""",
     ]
 
     benchmark_code_strings(code, output_filename)

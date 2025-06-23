@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 from pettingzoo import ParallelEnv
+
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
 
 

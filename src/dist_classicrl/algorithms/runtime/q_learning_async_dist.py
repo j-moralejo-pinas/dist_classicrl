@@ -133,9 +133,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
                 steps_since_val = 0
-                print(
-                    f"Validation reward: {val_total_rewards:.2f}"
-                )
+                print(f"Validation reward: {val_total_rewards:.2f}")
 
     def communicate_master(self, steps: int) -> List[float]:
         num_workers = NUM_NODES - 1
