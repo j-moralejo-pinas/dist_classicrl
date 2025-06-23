@@ -52,6 +52,7 @@ MANIFEST
 .venv*/
 .conda*/
 .python-version
-test*.py
+# test*.py
 
 *.txt
+dev_tests/*
