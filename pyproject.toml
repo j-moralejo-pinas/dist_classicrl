@@ -1,9 +1,54 @@
 [build-system]
 # AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
-requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5"]
+requires = ["setuptools>=61", "setuptools_scm[toml]>=7", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "dist_classicrl"
+description = "A Python package for distributed classical reinforcement learning algorithms."
+authors = [{ name = "Javier Moralejo Piñas", email = "j.moralejo.pinas@gmail.com" }]
+readme = "README.md"
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+requires-python = ">=3.8"
+dependencies = [
+    "gymnasium",
+    "mpi4py",
+    "numpy",
+]
+
+[project.urls]
+Homepage = "https://github.com/j-moralejo-pinas/dist_classicrl"
+Source = "https://github.com/j-moralejo-pinas/dist_classicrl"
+Tracker = "https://github.com/j-moralejo-pinas/dist_classicrl/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
 
 [tool.setuptools_scm]
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
-version_scheme = "no-guess-dev"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "mypy", "pre-commit"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
+# norecursedirs = ["build", "dist"]
+testpaths = ["tests"]
+
+[tool.black]
+
+[tool.isort]
+profile = "black"

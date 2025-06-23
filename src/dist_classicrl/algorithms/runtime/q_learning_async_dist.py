@@ -2,15 +2,15 @@
 
 import queue
 import threading
-import gymnasium
-from mpi4py import MPI
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from numpy.typing import NDArray
-from dist_classicrl.environments.custom_env import DistClassicRLEnv
-from dist_classicrl.algorithms.runtime.q_learning_single_thread import OptimalQLearningBase
 from gymnasium.vector import SyncVectorEnv
+from mpi4py import MPI
+from numpy.typing import NDArray
+
+from dist_classicrl.algorithms.runtime.q_learning_single_thread import OptimalQLearningBase
+from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 comm = MPI.COMM_WORLD
 RANK = comm.Get_rank()
