@@ -6,8 +6,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dist_classicrl"
 description = "A Python package for distributed classical reinforcement learning algorithms."
+version = "0.0.0"
 authors = [{ name = "Javier Moralejo Piñas", email = "j.moralejo.pinas@gmail.com" }]
-readme = "README.md"
+readme = "README.rst"
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -41,12 +42,7 @@ local_scheme = "node-and-date"
 
 [project.optional-dependencies]
 dev = ["pytest", "black", "mypy", "pre-commit", "isort"]
-docs = [
-    "sphinx",
-    "sphinx-autoapi",
-    "sphinx_rtd_theme",
-    "sphinxcontrib-napoleon",
-]
+docs = ["sphinx", "sphinx-autoapi", "sphinx_rtd_theme", "sphinxcontrib-napoleon"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
