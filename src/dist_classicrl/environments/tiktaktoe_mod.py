@@ -209,4 +209,3 @@ class TicTacToeEnv(gym.Env):
 
     def close(self) -> None:
         """Close the environment and clean up resources."""
-        pass

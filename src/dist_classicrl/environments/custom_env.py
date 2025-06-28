@@ -14,7 +14,14 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
     This class extends gymnasium.Env to provide a standardized interface for
     multi-agent environments that can be used in distributed training scenarios.
+
+    Attributes
+    ----------
+    num_agents : int
+        Number of agents in the environment. This is an abstract attribute that must be defined in subclasses
     """
+
+    num_agents: int
 
     def __init__(self, **kwargs):
         """
@@ -58,7 +65,6 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
             - infos: List[Dict]
               Info dictionaries for all agents
         """
-        pass
 
     @abc.abstractmethod
     def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[
@@ -84,18 +90,17 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
             - infos: List[Dict]
               Info dictionaries for all agents
         """
-        pass
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the environment and clean up resources."""
 
     @abc.abstractmethod
-    def render(self):
+    def render(self) -> None:
         """Render the environment for visualization."""
 
     @abc.abstractmethod
-    def seed(self, seed):
+    def seed(self, seed: int) -> None:
         """
         Set the random seed for the environment.
 
@@ -106,7 +111,7 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         """
 
     @abc.abstractmethod
-    def get_env_info(self):
+    def get_env_info(self) -> Dict[str, Any]:
         """
         Get environment information.
 
@@ -117,7 +122,7 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         """
 
     @abc.abstractmethod
-    def get_agent_info(self):
+    def get_agent_info(self) -> Dict[str, Any]:
         """
         Get agent information.
 

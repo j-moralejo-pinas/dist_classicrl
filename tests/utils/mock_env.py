@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 
@@ -12,17 +14,17 @@ class MockEnvironment(DistClassicRLEnv):
         super().__init__()
         self.num_envs = num_envs
         self.return_dict = return_dict
-        self.observation_space = None
-        self.action_space = None
         self._step_count = 0
         self._max_steps = 10
 
-    def step(self, actions: np.typing.NDArray[np.int32]) -> Tuple[
-        Union[np.typing.NDArray[np.int32], Dict[str, np.typing.NDArray[np.int32]]],
+    def step(
+        self, actions: np.typing.NDArray[np.int32]
+    ) -> tuple[
+        np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]],
         np.typing.NDArray[np.float32],
         np.typing.NDArray[np.bool_],
         np.typing.NDArray[np.bool_],
-        List[Dict[str, Any]],
+        list[dict[str, Any]],
     ]:
         """Mock step function."""
         self._step_count += 1
@@ -42,9 +44,11 @@ class MockEnvironment(DistClassicRLEnv):
 
         return next_states, rewards, terminated, truncated, infos
 
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[
-        Union[np.typing.NDArray[np.int32], Dict[str, np.typing.NDArray[np.int32]]],
-        List[Dict[str, Any]],
+    def reset(
+        self, seed: int | None = None, options: dict | None = None
+    ) -> tuple[
+        np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]],
+        list[dict[str, Any]],
     ]:
         """Mock reset function."""
         self._step_count = 0
@@ -62,20 +66,17 @@ class MockEnvironment(DistClassicRLEnv):
 
     def close(self) -> None:
         """Mock close function."""
-        pass
 
     def render(self) -> None:
         """Mock render function."""
-        pass
 
     def seed(self, seed: int = 0) -> None:
         """Mock seed function."""
-        pass
 
-    def get_env_info(self) -> Dict[str, Any]:
+    def get_env_info(self) -> dict[str, Any]:
         """Mock get_env_info function."""
         return {}
 
-    def get_agent_info(self) -> Dict[str, Any]:
+    def get_agent_info(self) -> dict[str, Any]:
         """Mock get_agent_info function."""
         return {}

@@ -235,16 +235,15 @@ class OptimalQLearningBase:
         """
         if not deterministic and random.uniform(0, 1) < self.exploration_rate:
             return random.randint(0, self.action_size - 1)
-        else:
-            q_values = self.get_state_q_values(state)
-            max_val = -math.inf
-            available_actions = []
-            for i, v in enumerate(q_values):
-                if v > max_val:
-                    max_val = v
-                    available_actions = [i]
-                elif v == max_val:
-                    available_actions.append(i)
+        q_values = self.get_state_q_values(state)
+        max_val = -math.inf
+        available_actions = []
+        for i, v in enumerate(q_values):
+            if v > max_val:
+                max_val = v
+                available_actions = [i]
+            elif v == max_val:
+                available_actions.append(i)
 
         if available_actions:
             return random.choice(available_actions)
@@ -272,9 +271,9 @@ class OptimalQLearningBase:
             Action chosen by the agent.
         """
         available_actions = []
-        assert (
-            len(action_mask) == self.action_size
-        ), "Action mask should have the same length as the action size."
+        assert len(action_mask) == self.action_size, (
+            "Action mask should have the same length as the action size."
+        )
         if not deterministic and random.uniform(0, 1) < self.exploration_rate:
             available_actions = [a for a in range(self.action_size) if action_mask[a]]
         else:
@@ -319,15 +318,14 @@ class OptimalQLearningBase:
                 dtype=np.int32,
                 count=len(states),
             )
-        else:
-            return np.fromiter(
-                (
-                    self.choose_masked_action(state, action_mask, deterministic)
-                    for state, action_mask in zip(states, action_masks)
-                ),
-                dtype=np.int32,
-                count=len(states),
-            )
+        return np.fromiter(
+            (
+                self.choose_masked_action(state, action_mask, deterministic)
+                for state, action_mask in zip(states, action_masks)
+            ),
+            dtype=np.int32,
+            count=len(states),
+        )
 
     def choose_action_vec(
         self,
@@ -379,9 +377,9 @@ class OptimalQLearningBase:
             Action chosen by the agent.
         """
         np_action_mask = np.fromiter(action_mask, dtype=np.int32, count=len(action_mask))
-        assert (
-            np_action_mask.size == self.action_size
-        ), "Action mask should have the same size as the action space."
+        assert np_action_mask.size == self.action_size, (
+            "Action mask should have the same size as the action space."
+        )
 
         if not deterministic and random.random() < self.exploration_rate:
             available_actions = np.where(np_action_mask)[0]
@@ -420,15 +418,14 @@ class OptimalQLearningBase:
                 dtype=np.int32,
                 count=len(states),
             )
-        else:
-            return np.fromiter(
-                (
-                    self.choose_masked_action_vec(state, action_mask, deterministic)
-                    for state, action_mask in zip(states, action_masks)
-                ),
-                dtype=np.int32,
-                count=len(states),
-            )
+        return np.fromiter(
+            (
+                self.choose_masked_action_vec(state, action_mask, deterministic)
+                for state, action_mask in zip(states, action_masks)
+            ),
+            dtype=np.int32,
+            count=len(states),
+        )
 
     def choose_actions_vec(
         self,
@@ -450,8 +447,7 @@ class OptimalQLearningBase:
         NDArray[np.int32]
             Actions chosen for all agents.
         """
-
-        max_q_values = np.max(self.q_table[states], axis=1, keepdims=True)
+        max_q_values: NDArray[np.float32] = np.max(self.q_table[states], axis=1, keepdims=True)
 
         if not deterministic:
             explore_flags = np.random.rand(states.size) < self.exploration_rate
@@ -464,10 +460,7 @@ class OptimalQLearningBase:
                         else exploratory_action
                     )
                     for q_value, max_q_value, explore_flag, exploratory_action in zip(
-                        self.q_table[states],
-                        max_q_values.tolist(),
-                        explore_flags.tolist(),
-                        exploratory_actions.tolist(),
+                        self.q_table[states], max_q_values, explore_flags, exploratory_actions
                     )
                 ),
                 dtype=np.int32,
@@ -478,7 +471,7 @@ class OptimalQLearningBase:
         best_actions_per_state = np.fromiter(
             (
                 random.choice(np.where(q_value == max_q_value)[0])
-                for q_value, max_q_value in zip(self.q_table[states], max_q_values.tolist())
+                for q_value, max_q_value in zip(self.q_table[states], max_q_values)
             ),
             dtype=np.int32,
             count=states.size,
@@ -509,14 +502,13 @@ class OptimalQLearningBase:
         NDArray[np.int32]
             Actions chosen for all agents.
         """
-
         assert action_masks.shape == (
             states.size,
             self.action_size,
         ), "Action masks must match the number of states and actions."
 
         masked_q_values_vec = np.where(action_masks, self.q_table[states], -np.inf)
-        max_q_values = np.max(masked_q_values_vec, axis=1, keepdims=True)
+        max_q_values: NDArray[np.float32] = np.max(masked_q_values_vec, axis=1, keepdims=True)
 
         if not deterministic:
             explore_flags = np.random.rand(states.size) < self.exploration_rate
@@ -528,7 +520,7 @@ class OptimalQLearningBase:
                         else random.choice(np.where(mask)[0])
                     )
                     for masked_q_value, max_q_value, mask, explore_flag in zip(
-                        masked_q_values_vec, max_q_values.tolist(), action_masks, explore_flags
+                        masked_q_values_vec, max_q_values, action_masks, explore_flags
                     )
                 ),
                 dtype=np.int32,
@@ -539,7 +531,7 @@ class OptimalQLearningBase:
         best_actions_per_state = np.fromiter(
             (
                 random.choice(np.where(masked_q_value == max_q_value)[0])
-                for masked_q_value, max_q_value in zip(masked_q_values_vec, max_q_values.tolist())
+                for masked_q_value, max_q_value in zip(masked_q_values_vec, max_q_values)
             ),
             dtype=np.int32,
             count=states.size,
@@ -572,32 +564,24 @@ class OptimalQLearningBase:
         if action_masks is None:
             if deterministic:
                 if self.action_size <= 10:
-
                     return self.choose_actions_iter(states, deterministic)
-                elif self.action_size > 1000:
+                if self.action_size > 1000:
                     return self.choose_actions_vec_iter(states, deterministic)
-                else:
-                    return self.choose_actions_vec(states, deterministic)
-            else:
-                if len(states) < 100:
-                    return self.choose_actions_iter(states, deterministic)
-                elif self.action_size < 100:
-                    return self.choose_actions_vec(states, deterministic)
-                else:
-                    return self.choose_actions_vec(states, deterministic)
-        else:
-            if deterministic:
-                if self.action_size <= 10:
-                    return self.choose_actions_iter(states, deterministic, action_masks)
-                elif self.action_size > 1000:
-                    return self.choose_actions_vec_iter(states, deterministic, action_masks)
-                else:
-                    return self.choose_masked_actions_vec(states, action_masks, deterministic)
-            else:
-                if self.action_size <= 10:
-                    return self.choose_actions_iter(states, deterministic, action_masks)
-                else:
-                    return self.choose_actions_vec_iter(states, deterministic, action_masks)
+                return self.choose_actions_vec(states, deterministic)
+            if len(states) < 100:
+                return self.choose_actions_iter(states, deterministic)
+            if self.action_size < 100:
+                return self.choose_actions_vec(states, deterministic)
+            return self.choose_actions_vec(states, deterministic)
+        if deterministic:
+            if self.action_size <= 10:
+                return self.choose_actions_iter(states, deterministic, action_masks)
+            if self.action_size > 1000:
+                return self.choose_actions_vec_iter(states, deterministic, action_masks)
+            return self.choose_masked_actions_vec(states, action_masks, deterministic)
+        if self.action_size <= 10:
+            return self.choose_actions_iter(states, deterministic, action_masks)
+        return self.choose_actions_vec_iter(states, deterministic, action_masks)
 
     def update_explore_rate(self) -> None:
         """
@@ -668,7 +652,6 @@ class OptimalQLearningBase:
             Next states of all agents.
         """
         if next_action_masks is None:
-
             for state, action, reward, next_state, term in zip(
                 states, actions, rewards, next_states, terminated
             ):

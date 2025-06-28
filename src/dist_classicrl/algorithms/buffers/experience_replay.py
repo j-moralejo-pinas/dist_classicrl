@@ -1,5 +1,6 @@
 """This module implements an Experience Replay buffer for storing
-and sampling experiences in reinforcement learning."""
+and sampling experiences in reinforcement learning.
+"""
 
 from typing import Tuple
 

@@ -79,16 +79,15 @@ class SingleEnvQLearning(OptimalQLearningBase):
         val_agent_reward_history = {}
         states, infos = env.reset()
         for step in range(steps):
-
-            actions = self.choose_actions(states)
-            next_states, rewards, terminated, truncated, infos = env.step(actions)
+            actions = self.choose_actions(states)  # type: ignore
+            next_states, rewards, terminated, truncated, infos = env.step(actions)  # type: ignore
 
             for agent, reward in rewards.items():
                 if agent not in agent_reward_history:
                     agent_reward_history[agent] = [0]
                 agent_reward_history[agent][-1] += reward
 
-            self.learn(states, actions, rewards, next_states, terminated)
+            self.learn(states, actions, rewards, next_states, terminated)  # type: ignore
             states = next_states
 
             if not states:
@@ -97,7 +96,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
                 for agent, reward in agent_reward_history.items():
                     if agent not in val_agent_reward_history:
                         val_agent_reward_history[agent] = []
-                    agent_reward_history[agent].append(0)
+                    reward.append(0)
             else:
                 for agent, reward in rewards.items():
                     agent_reward_history[agent][-1] += reward
@@ -120,7 +119,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
 
     def evaluate_steps(
         self,
-        env: SyncVe,
+        env: ParallelEnv,
         steps: int,
     ) -> Tuple[float, Dict[Any, float]]:
         """
@@ -141,8 +140,8 @@ class SingleEnvQLearning(OptimalQLearningBase):
         agent_rewards = {}
         states, infos = env.reset()
         for _ in range(steps):
-            actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminated, truncated, infos = env.step(actions)
+            actions = self.choose_actions(states, deterministic=True)  # type: ignore
+            next_states, rewards, terminated, truncated, infos = env.step(actions)  # type: ignore
             for agent, reward in rewards.items():
                 if agent not in agent_rewards:
                     agent_rewards[agent] = 0
@@ -176,8 +175,8 @@ class SingleEnvQLearning(OptimalQLearningBase):
         states, infos = env.reset()
         episode = 0
         while episode < episodes:
-            actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminated, truncated, infos = env.step(actions)
+            actions = self.choose_actions(states, deterministic=True)  # type: ignore
+            next_states, rewards, terminated, truncated, infos = env.step(actions)  # type: ignore
             for agent, reward in rewards.items():
                 if agent not in agent_rewards:
                     agent_rewards[agent] = 0

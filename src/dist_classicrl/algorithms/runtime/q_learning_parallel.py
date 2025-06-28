@@ -6,10 +6,10 @@ import multiprocessing as mp
 from multiprocessing import Value, connection, shared_memory
 from multiprocessing.sharedctypes import Synchronized
 from multiprocessing.synchronize import Lock
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from gymnasium.vector import SyncVectorEnv
+from gymnasium.vector import VectorEnv
 from numpy.typing import NDArray
 
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
@@ -82,9 +82,9 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def train(
         self,
-        envs: Union[List[DistClassicRLEnv], List[SyncVectorEnv]],
+        envs: Union[Sequence[DistClassicRLEnv], Sequence[VectorEnv]],
         steps: int,
-        val_env: Union[DistClassicRLEnv, SyncVectorEnv],
+        val_env: Union[DistClassicRLEnv, VectorEnv],
         val_every_n_steps: int,
         val_steps: Optional[int],
         val_episodes: Optional[int],
@@ -106,9 +106,9 @@ class ParallelQLearning(OptimalQLearningBase):
             Evaluate the agent every n steps.
         """
         try:
-            assert (val_steps is None) ^ (
-                val_episodes is None
-            ), "Either val_steps or val_episodes should be provided."
+            assert (val_steps is None) ^ (val_episodes is None), (
+                "Either val_steps or val_episodes should be provided."
+            )
 
             reward_history = []
             val_reward_history = []
@@ -170,7 +170,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def run_steps(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: Union[DistClassicRLEnv, VectorEnv],
         num_steps: int,
         rewards_queue: mp.Queue,
         sm_lock: Lock,
@@ -257,7 +257,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def evaluate_steps(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: Union[DistClassicRLEnv, VectorEnv],
         steps: int,
     ) -> Tuple[float, List[float]]:
         """
@@ -275,7 +275,6 @@ class ParallelQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
         states, infos = env.reset(seed=42)
         if isinstance(states, dict):
             n_agents = len(states["observation"])
@@ -303,7 +302,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def evaluate_episodes(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: Union[DistClassicRLEnv, VectorEnv],
         episodes: int,
     ) -> Tuple[float, List[float]]:
         """
@@ -321,7 +320,6 @@ class ParallelQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
         states, infos = env.reset(seed=42)
         if isinstance(states, dict):
             n_agents = len(states["observation"])

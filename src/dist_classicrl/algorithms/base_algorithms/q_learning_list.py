@@ -236,9 +236,9 @@ class MultiAgentQLearningLists:
         """
         available_actions = []
         if action_mask:
-            assert (
-                len(action_mask) == self.action_size
-            ), "Action mask should have the same length as the action size."
+            assert len(action_mask) == self.action_size, (
+                "Action mask should have the same length as the action size."
+            )
             if not deterministic and random.uniform(0, 1) < self.exploration_rate:
                 available_actions = [a for a in range(self.action_size) if action_mask[a]]
             else:
@@ -252,18 +252,17 @@ class MultiAgentQLearningLists:
                             available_actions = [i]
                         elif v == max_val:
                             available_actions.append(i)
+        elif not deterministic and random.uniform(0, 1) < self.exploration_rate:
+            available_actions = range(self.action_size)
         else:
-            if not deterministic and random.uniform(0, 1) < self.exploration_rate:
-                available_actions = range(self.action_size)
-            else:
-                q_values = self.get_state_q_values(state)
-                max_val = -math.inf
-                for i, v in enumerate(q_values):
-                    if v > max_val:
-                        max_val = v
-                        available_actions = [i]
-                    elif v == max_val:
-                        available_actions.append(i)
+            q_values = self.get_state_q_values(state)
+            max_val = -math.inf
+            for i, v in enumerate(q_values):
+                if v > max_val:
+                    max_val = v
+                    available_actions = [i]
+                elif v == max_val:
+                    available_actions.append(i)
 
         if available_actions:
             return random.choice(available_actions)
@@ -294,9 +293,9 @@ class MultiAgentQLearningLists:
             Actions chosen for all agents.
         """
         if action_masks:
-            assert len(states) == len(
-                action_masks
-            ), "States list and action masks list should have the same length."
+            assert len(states) == len(action_masks), (
+                "States list and action masks list should have the same length."
+            )
             return [
                 self.choose_action(state, deterministic, action_mask)
                 for state, action_mask in zip(states, action_masks)
@@ -320,7 +319,6 @@ class MultiAgentQLearningLists:
         next_states : List[int]
             Next states of all agents.
         """
-
         for state, action, reward, next_state in zip(states, actions, rewards, next_states):
             max_next_q_value = max(self.get_state_q_values(next_state))
             target = reward + self.discount_factor * max_next_q_value

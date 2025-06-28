@@ -257,8 +257,7 @@ class PettingZooVectorWrapper:
         """
         if isinstance(data_list[0], dict):
             return {k: self._stack_structure([d[k] for d in data_list]) for k in data_list[0]}
-        else:
-            return np.array(data_list)
+        return np.array(data_list)
 
     def _unstack_structure(self, data, num_agents):
         """
@@ -282,9 +281,8 @@ class PettingZooVectorWrapper:
             # Recursively unstack each key.
             unstacked = {k: self._unstack_structure(v, num_agents) for k, v in data.items()}
             return [{k: unstacked[k][i] for k in unstacked} for i in range(num_agents)]
-        else:
-            # Assume data is a NumPy array with the first dimension corresponding to agents.
-            return [data[i] for i in range(num_agents)]
+        # Assume data is a NumPy array with the first dimension corresponding to agents.
+        return [data[i] for i in range(num_agents)]
 
 
 # Test function for the wrapper.
@@ -308,7 +306,7 @@ def test_pettingzoo_vector_wrapper():
     # Check structure:
     # It should be a dict with keys "observation" and "action_mask",
     # and each value should be a NumPy array with shape (num_agents, ...).
-    for key, value in reset_obs.items():
+    for key, value in reset_obs.items():  # type: ignore
         print(f"Key: {key}, shape: {np.array(value).shape}")
 
     # Create a vectorized (structured) action.

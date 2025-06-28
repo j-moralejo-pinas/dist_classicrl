@@ -45,18 +45,18 @@ def test_get_valid_moves() -> None:
     env.board = np.zeros((3, 3), dtype=np.int8)
     valid_moves = env._get_valid_moves()
     assert len(valid_moves) == 9, "All moves should be valid on an empty board."
-    assert all(
-        move in valid_moves for move in range(9)
-    ), "All positions should be valid moves on an empty board."
+    assert all(move in valid_moves for move in range(9)), (
+        "All positions should be valid moves on an empty board."
+    )
 
     # Make some moves
     env.board[0, 0] = 1
     env.board[1, 0] = 2
     valid_moves = env._get_valid_moves()
     assert len(valid_moves) == 7, "There should be 7 valid moves after two moves are made."
-    assert all(
-        move in valid_moves for move in [1, 2, 4, 5, 6, 7, 8]
-    ), "Valid moves should exclude occupied positions."
+    assert all(move in valid_moves for move in [1, 2, 4, 5, 6, 7, 8]), (
+        "Valid moves should exclude occupied positions."
+    )
 
     env.board = np.array(
         [
@@ -80,9 +80,9 @@ def test_get_obs() -> None:
     assert obs["observation"].shape == (9,), "Observation should be a flat array of size 9."
     assert obs["action_mask"].shape == (9,), "Action mask should be a flat array of size 9."
     assert np.all(obs["observation"] == 0), "Observation should be all zeros on an empty board."
-    assert np.all(
-        obs["action_mask"] == 1
-    ), "Action mask should indicate all moves are valid on an empty board."
+    assert np.all(obs["action_mask"] == 1), (
+        "Action mask should indicate all moves are valid on an empty board."
+    )
 
     new_board = np.array(
         [
@@ -93,12 +93,12 @@ def test_get_obs() -> None:
     )
     env.board = np.copy(new_board)
     obs = env._get_obs()
-    assert np.array_equal(
-        obs["observation"], new_board.flatten()
-    ), "Observation should match the current board state."
-    assert (
-        obs["action_mask"][0] == 0
-    ), "Action mask should indicate the first move is no longer valid."
+    assert np.array_equal(obs["observation"], new_board.flatten()), (
+        "Observation should match the current board state."
+    )
+    assert obs["action_mask"][0] == 0, (
+        "Action mask should indicate the first move is no longer valid."
+    )
     assert np.all(obs["action_mask"][1:] == 1), "All other moves should still be valid."
 
     new_board = np.array(
@@ -110,12 +110,12 @@ def test_get_obs() -> None:
     )
     env.board = np.copy(new_board)
     obs = env._get_obs()
-    assert np.array_equal(
-        obs["observation"], new_board.flatten()
-    ), "Observation should match the current board state."
-    assert np.all(
-        obs["action_mask"] == 0
-    ), "Action mask should indicate no valid moves when the board is full."
+    assert np.array_equal(obs["observation"], new_board.flatten()), (
+        "Observation should match the current board state."
+    )
+    assert np.all(obs["action_mask"] == 0), (
+        "Action mask should indicate no valid moves when the board is full."
+    )
 
 
 def test_get_machine_move() -> None:
@@ -283,15 +283,15 @@ def test_step() -> None:
     env.agent_mark = 1
     env.machine_mark = 2
     obs, reward, terminated, truncated, info = env.step(0)
-    assert (
-        sum(obs["action_mask"]) == 7
-    ), "There should be 7 valid moves after the first agent and machine moves."
+    assert sum(obs["action_mask"]) == 7, (
+        "There should be 7 valid moves after the first agent and machine moves."
+    )
 
     assert obs["action_mask"][0] == 0, "First move should not be valid anymore."
     assert env.board[0, 0] == env.agent_mark, "Board should reflect the agent's move."
-    assert (
-        len(np.where(env.board.flatten() == 0)[0]) == 7
-    ), "There should be 7 valid moves after the first move."
+    assert len(np.where(env.board.flatten() == 0)[0]) == 7, (
+        "There should be 7 valid moves after the first move."
+    )
 
 
 def test_running_environment() -> None:

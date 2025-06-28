@@ -41,7 +41,7 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy", "pre-commit", "isort"]
+dev = ["pytest", "black", "mypy", "pre-commit", "isort", "ruff"]
 docs = ["sphinx", "sphinx-autoapi", "sphinx_rtd_theme", "sphinxcontrib-napoleon"]
 
 [tool.pytest.ini_options]
@@ -62,3 +62,21 @@ source-roots = ["src"]
 
 [tool.pylint."Format"]
 max-line-length = 100
+
+[tool.ruff]
+fix = true
+line-length = 100
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 100
+
+[tool.ruff.lint]
+ignore = ["S101", "COM812"]
+select = ["ALL"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 100
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

@@ -70,9 +70,9 @@ class SingleThreadQLearning(OptimalQLearningBase):
         eval_every_n_steps : int
             Evaluate the agent every n steps.
         """
-        assert (val_steps is None) ^ (
-            val_episodes is None
-        ), "Either val_steps or val_episodes should be provided."
+        assert (val_steps is None) ^ (val_episodes is None), (
+            "Either val_steps or val_episodes should be provided."
+        )
 
         states, infos = env.reset()
         if isinstance(states, dict):
@@ -148,7 +148,6 @@ class SingleThreadQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
         states, infos = env.reset(seed=42)
         if isinstance(states, dict):
             n_agents = len(states["observation"])
@@ -194,7 +193,6 @@ class SingleThreadQLearning(OptimalQLearningBase):
         Tuple[float, Dict[Any, float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-
         states, infos = env.reset(seed=42)
         if isinstance(states, dict):
             n_agents = len(states["observation"])

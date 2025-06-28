@@ -235,7 +235,7 @@ class MultiAgentQLearningNumpy:
             else:
                 max_val = -math.inf
                 available_actions = []
-                for idx, val in enumerate(self.q_table[state].tolist()):
+                for idx, val in enumerate(self.q_table[state]):
                     if val > max_val:
                         max_val = val
                         available_actions = [idx]
@@ -243,33 +243,32 @@ class MultiAgentQLearningNumpy:
                         available_actions.append(idx)
             return random.choice(available_actions)
 
-        assert (
-            action_mask.size == self.action_size
-        ), "Action mask should have the same size as the action space."
+        assert action_mask.size == self.action_size, (
+            "Action mask should have the same size as the action space."
+        )
 
         if not deterministic and random.random() < self.exploration_rate:
             if self.action_size > 10:
                 available_actions = np.where(action_mask == 1)[0]
             else:
                 available_actions = []
-                for i, val in enumerate(action_mask.tolist()):  # type: ignore
+                for i, val in enumerate(action_mask):
                     if val:
                         available_actions.append(i)
+        elif self.action_size > 250:
+            masked_q_values = np.where(action_mask, self.q_table[state], -np.inf)
+            max_val = np.max(masked_q_values)
+            available_actions = np.where(masked_q_values == max_val)[0]
         else:
-            if self.action_size > 250:
-                masked_q_values = np.where(action_mask, self.q_table[state], -np.inf)
-                max_val = np.max(masked_q_values)
-                available_actions = np.where(masked_q_values == max_val)[0]
-            else:
-                max_val = 0
-                available_actions = []
-                for idx, (val, mask) in enumerate(zip(self.q_table[state].tolist(), action_mask.tolist())):  # type: ignore
-                    if mask:
-                        if val > max_val:
-                            max_val = val
-                            available_actions = [idx]
-                        elif val == max_val:
-                            available_actions.append(idx)
+            max_val = 0
+            available_actions = []
+            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask)):
+                if mask:
+                    if val > max_val:
+                        max_val = val
+                        available_actions = [idx]
+                    elif val == max_val:
+                        available_actions.append(idx)
 
         return random.choice(available_actions) if len(available_actions) > 0 else -1
 
@@ -302,7 +301,7 @@ class MultiAgentQLearningNumpy:
 
             max_val = -math.inf
             available_actions = []
-            for idx, val in enumerate(self.q_table[state].tolist()):
+            for idx, val in enumerate(self.q_table[state]):
                 if val > max_val:
                     max_val = val
                     available_actions = [idx]
@@ -310,21 +309,19 @@ class MultiAgentQLearningNumpy:
                     available_actions.append(idx)
             return random.choice(available_actions)
 
-        assert (
-            action_mask.size == self.action_size
-        ), "Action mask should have the same size as the action space."
+        assert action_mask.size == self.action_size, (
+            "Action mask should have the same size as the action space."
+        )
 
         if not deterministic and random.random() < self.exploration_rate:
-
             available_actions = []
-            for i, val in enumerate(action_mask.tolist()):  # type: ignore
+            for i, val in enumerate(action_mask):
                 if val:
                     available_actions.append(i)
         else:
-
             max_val = 0
             available_actions = []
-            for idx, (val, mask) in enumerate(zip(self.q_table[state].tolist(), action_mask.tolist())):  # type: ignore
+            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask)):
                 if mask:
                     if val > max_val:
                         max_val = val
@@ -365,9 +362,9 @@ class MultiAgentQLearningNumpy:
             available_actions = np.where(self.q_table[state] == max_val)[0]
             return random.choice(available_actions)
 
-        assert (
-            action_mask.size == self.action_size
-        ), "Action mask should have the same size as the action space."
+        assert action_mask.size == self.action_size, (
+            "Action mask should have the same size as the action space."
+        )
 
         if not deterministic and random.random() < self.exploration_rate:
             available_actions = np.where(action_mask == 1)[0]
@@ -402,14 +399,13 @@ class MultiAgentQLearningNumpy:
         List[int]
             Actions chosen for all agents.
         """
-
         if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states.tolist()])
+            return np.array([self.choose_action(state, deterministic) for state in states])
 
         return np.array(
             [
                 self.choose_action(state, deterministic, action_mask)
-                for state, action_mask in zip(states.tolist(), action_masks)
+                for state, action_mask in zip(states, action_masks)
             ]
         )
 
@@ -420,12 +416,12 @@ class MultiAgentQLearningNumpy:
         action_masks: Optional[NDArray[np.int32]] = None,
     ) -> NDArray[np.int32]:
         if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states.tolist()])
+            return np.array([self.choose_action(state, deterministic) for state in states])
 
         return np.array(
             [
                 self.choose_action_0(state, deterministic, action_mask)
-                for state, action_mask in zip(states.tolist(), action_masks)
+                for state, action_mask in zip(states, action_masks)
             ]
         )
 
@@ -436,12 +432,12 @@ class MultiAgentQLearningNumpy:
         action_masks: Optional[NDArray[np.int32]] = None,
     ) -> NDArray[np.int32]:
         if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states.tolist()])
+            return np.array([self.choose_action(state, deterministic) for state in states])
 
         return np.array(
             [
                 self.choose_action_1(state, deterministic, action_mask)
-                for state, action_mask in zip(states.tolist(), action_masks)
+                for state, action_mask in zip(states, action_masks)
             ]
         )
 
@@ -468,7 +464,6 @@ class MultiAgentQLearningNumpy:
         List[int]
             Actions chosen for all agents.
         """
-
         # Exploration: Randomly choose a valid action in a single step
         if deterministic:
             # If no mask is provided, allow all actions
@@ -477,7 +472,7 @@ class MultiAgentQLearningNumpy:
                 best_actions_per_state = np.array(
                     [
                         random.choice(np.where(q_value == max_q_value)[0])
-                        for q_value, max_q_value in zip(self.q_table[states], max_q_values.tolist())
+                        for q_value, max_q_value in zip(self.q_table[states], max_q_values)
                     ]
                 )
             else:
@@ -495,70 +490,63 @@ class MultiAgentQLearningNumpy:
                 best_actions_per_state = np.array(
                     [
                         random.choice(np.where(masked_q_value == max_q_value)[0])
-                        for masked_q_value, max_q_value in zip(
-                            masked_q_values, max_q_values.tolist()
-                        )
+                        for masked_q_value, max_q_value in zip(masked_q_values, max_q_values)
                     ]
                 )
             return best_actions_per_state
+
+        explore_flags = np.random.rand(states.size) < self.exploration_rate
+
+        # If no mask is provided, allow all actions
+        if action_masks is None:
+            exploratory_actions = np.random.randint(self.action_size, size=states.size)
+            max_q_values: NDArray[np.float64] = np.max(self.q_table[states], axis=1, keepdims=True)
+            best_actions_per_state = np.array(
+                [
+                    (random.choice(np.where(q_value == max_q_value)[0]) if not explore_flag else -1)
+                    for q_value, max_q_value, explore_flag in zip(
+                        self.q_table[states], max_q_values, explore_flags
+                    )
+                ]
+            )
         else:
+            # Ensure mask has correct shape
+            assert action_masks.shape == (
+                states.size,
+                self.action_size,
+            ), "Action masks must match the number of states and actions."
 
-            explore_flags = np.random.rand(states.size) < self.exploration_rate
+            exploratory_actions = np.array(
+                [
+                    (
+                        random.choice(valid_actions)
+                        if (valid_actions := np.where(mask)[0]).size > 0
+                        else -1
+                    )
+                    for mask in action_masks
+                ]
+            )
 
-            # If no mask is provided, allow all actions
-            if action_masks is None:
-                exploratory_actions = np.random.randint(self.action_size, size=states.size)
-                max_q_values = np.max(self.q_table[states], axis=1, keepdims=True)
-                best_actions_per_state = np.array(
-                    [
-                        (
-                            random.choice(np.where(q_value == max_q_value)[0])
-                            if not explore_flag
-                            else -1
-                        )
-                        for q_value, max_q_value, explore_flag in zip(
-                            self.q_table[states], max_q_values.tolist(), explore_flags.tolist()
-                        )
-                    ]
-                )
-            else:
-                # Ensure mask has correct shape
-                assert action_masks.shape == (
-                    states.size,
-                    self.action_size,
-                ), "Action masks must match the number of states and actions."
+            # Exploitation: Get best actions based on Q-values
+            masked_q_values = np.where(action_masks, self.q_table[states], -np.inf)
+            max_q_values = np.max(
+                masked_q_values, axis=1, keepdims=True
+            )  # Get max Q-value per state
+            best_actions_per_state = np.array(
+                [
+                    (
+                        random.choice(np.where(masked_q_value == max_q_value)[0])
+                        if not explore_flag
+                        else -1
+                    )
+                    for masked_q_value, max_q_value, explore_flag in zip(
+                        masked_q_values, max_q_values, explore_flags
+                    )
+                ]
+            )
 
-                exploratory_actions = np.array(
-                    [
-                        (
-                            random.choice(valid_actions)
-                            if (valid_actions := np.where(mask)[0]).size > 0
-                            else -1
-                        )
-                        for mask in action_masks
-                    ]
-                )
-
-                # Exploitation: Get best actions based on Q-values
-                masked_q_values = np.where(action_masks, self.q_table[states], -np.inf)
-                max_q_values = np.max(
-                    masked_q_values, axis=1, keepdims=True
-                )  # Get max Q-value per state
-                best_actions_per_state = np.array(
-                    [
-                        (
-                            random.choice(np.where(masked_q_value == max_q_value)[0])
-                            if not explore_flag
-                            else -1
-                        )
-                        for masked_q_value, max_q_value, explore_flag in zip(
-                            masked_q_values, max_q_values.tolist(), explore_flags.tolist()
-                        )
-                    ]
-                )
-
-            # Select final actions: use exploration actions if exploring, otherwise exploitation
-            return np.where(explore_flags, exploratory_actions, best_actions_per_state)
+        # Select final actions: use exploration actions if exploring, otherwise exploitation
+        return np.where(explore_flags, exploratory_actions, best_actions_per_state)
 
     def learn(
         self,
@@ -581,7 +569,6 @@ class MultiAgentQLearningNumpy:
         next_states : List[int]
             Next states of all agents.
         """
-
         max_next_q_values = np.max(self.get_states_q_values(next_states), axis=1)
         targets = rewards + self.discount_factor * max_next_q_values
         predictions = self.get_q_values(states, actions)

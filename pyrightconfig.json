@@ -1,0 +1,5 @@
+{
+  "typeCheckingMode": "basic",
+  "venvPath": "/home/linuxjavier/micromamba/envs",
+  "venv": "dist-rl"
+}

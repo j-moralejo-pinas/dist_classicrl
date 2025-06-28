@@ -331,7 +331,6 @@ def run_mpi_integration_test():
         return
 
     from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-        MASTER_RANK,
         NUM_NODES,
         RANK,
     )

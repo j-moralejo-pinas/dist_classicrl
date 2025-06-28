@@ -5,11 +5,6 @@ This module contains comprehensive tests for all methods and functionality
 of the OptimalQLearningBase class from the q_learning_optimal module.
 """
 
-import math
-import os
-import random
-import tempfile
-from typing import List, Optional
 from unittest.mock import patch
 
 import numpy as np

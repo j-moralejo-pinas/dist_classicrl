@@ -55,9 +55,9 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
             action_space, spaces.Discrete
         ), f"Expected MultiDiscrete or Discrete action space, got {type(env.action_space)}."
 
-        assert isinstance(
-            action_space, spaces.MultiDiscrete
-        ), "Expected MultiDiscrete action space."
+        assert isinstance(action_space, spaces.MultiDiscrete), (
+            "Expected MultiDiscrete action space."
+        )
         self.action_radix = compute_radix(action_space.nvec)
         self.action_nvec = action_space.nvec
         self.action_space = spaces.Discrete(np.prod(action_space.nvec))
@@ -120,13 +120,13 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
 
         observation_space = env.observation_space
         if isinstance(observation_space, spaces.Dict):
-            assert (
-                "observation" in observation_space.spaces
-            ), "Expected 'observation' key in observation space."
+            assert "observation" in observation_space.spaces, (
+                "Expected 'observation' key in observation space."
+            )
             observation_subspace = observation_space.spaces["observation"]
-            assert isinstance(
-                observation_subspace, spaces.MultiDiscrete
-            ), "Expected MultiDiscrete observation space."
+            assert isinstance(observation_subspace, spaces.MultiDiscrete), (
+                "Expected MultiDiscrete observation space."
+            )
             self.observation_radix = compute_radix(observation_subspace.nvec)
             self.observation_nvec = observation_subspace.nvec
             self.observation_space = (
@@ -138,11 +138,13 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
         else:
             assert isinstance(observation_space, spaces.MultiDiscrete) or isinstance(
                 observation_space, spaces.Discrete
-            ), f"Expected MultiDiscrete or Discrete observation space, got {type(env.observation_space)}."
+            ), (
+                f"Expected MultiDiscrete or Discrete observation space, got {type(env.observation_space)}."
+            )
 
-            assert isinstance(
-                observation_space, spaces.MultiDiscrete
-            ), "Expected MultiDiscrete observation space."
+            assert isinstance(observation_space, spaces.MultiDiscrete), (
+                "Expected MultiDiscrete observation space."
+            )
             self.observation_radix = compute_radix(observation_space.nvec)
             self.observation_nvec = observation_space.nvec
             self.observation_space = spaces.Discrete(np.prod(observation_space.nvec))
@@ -169,5 +171,4 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
                 observation["observation"], self.observation_radix
             )
             return observation
-        else:
-            return encode_multi_discrete(observation, self.observation_radix)
+        return encode_multi_discrete(observation, self.observation_radix)
