@@ -40,7 +40,13 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy", "pre-commit", "isort", "sphinx", "sphinx-autoapi"]
+dev = ["pytest", "black", "mypy", "pre-commit", "isort"]
+docs = [
+    "sphinx",
+    "sphinx-autoapi",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-napoleon",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
