@@ -1,9 +1,19 @@
+"""This module provides a wrapper for PettingZoo environments."""
+
 import numpy as np
 
 
 # Dummy PettingZoo environment for testing.
 class DummyPettingZooEnv:
+    """
+    Dummy PettingZoo environment for testing the PettingZooVectorWrapper.
+
+    This class simulates a simple multi-agent environment with two agents
+    and structured observations/actions containing 'observation' and 'action_mask' keys.
+    """
+
     def __init__(self):
+        """Initialize the dummy environment with two agents."""
         # Fixed agent order.
         self.agents = ["agent_0", "agent_1"]
 
@@ -19,6 +29,19 @@ class DummyPettingZooEnv:
         }
 
     def reset(self, **kwargs):
+        """
+        Reset the environment and return initial observations.
+
+        Parameters
+        ----------
+        **kwargs
+            Additional keyword arguments (unused in this dummy implementation).
+
+        Returns
+        -------
+        dict
+            Dictionary mapping agent names to structured observations.
+        """
         # Return a dict keyed by agent names with composite observations.
         return {
             "agent_0": {"observation": np.array([0]), "action_mask": np.array([True, False])},
@@ -27,11 +50,24 @@ class DummyPettingZooEnv:
 
     def step(self, actions):
         """
+        Execute actions for all agents and return results.
+
         Expects actions as a dict keyed by agent names, each with a structured action.
         For this dummy env, we simply:
          - For agent_0: add 0 to the provided "action" value.
          - For agent_1: add 10 to the provided "action" value.
         The action_mask is passed through unchanged.
+
+        Parameters
+        ----------
+        actions : dict
+            Dictionary mapping agent names to structured actions.
+
+        Returns
+        -------
+        tuple
+            Tuple containing observations, rewards, terminated flags,
+            truncated flags, and info dictionaries for all agents.
         """
         new_obs = {}
         rewards = {}
@@ -57,6 +93,14 @@ class DummyPettingZooEnv:
         return new_obs, rewards, terminated, truncated, infos
 
     def render(self, mode="human"):
+        """
+        Render the environment.
+
+        Parameters
+        ----------
+        mode : str, optional
+            Rendering mode (default: "human").
+        """
         # Dummy render simply prints a message.
         print("Rendering DummyPettingZooEnv.")
 
@@ -75,6 +119,14 @@ class PettingZooVectorWrapper:
     """
 
     def __init__(self, env):
+        """
+        Initialize the PettingZooVectorWrapper.
+
+        Parameters
+        ----------
+        env : PettingZoo parallel environment
+            The PettingZoo environment to wrap.
+        """
         self.env = env
         self.agents = env.agents
 
@@ -83,10 +135,37 @@ class PettingZooVectorWrapper:
         self.action_space = env.action_space[self.agents[0]]
 
     def reset(self, **kwargs):
+        """
+        Reset the environment and return vectorized observations.
+
+        Parameters
+        ----------
+        **kwargs
+            Additional keyword arguments to pass to the environment reset.
+
+        Returns
+        -------
+        dict or array
+            Structured observations with shape (num_agents, ...) for each key.
+        """
         obs_dict = self.env.reset(**kwargs)
         return self._dict_to_structured(obs_dict)
 
     def step(self, actions):
+        """
+        Execute actions and return vectorized results.
+
+        Parameters
+        ----------
+        actions : dict or array
+            Structured actions with shape (num_agents, ...) for each key.
+
+        Returns
+        -------
+        tuple
+            Tuple containing vectorized observations, rewards, terminated flags,
+            truncated flags, and info lists.
+        """
         # Convert the structured (vectorized) actions into a per-agent dict.
         actions_dict = self._structured_to_dict(actions)
 
@@ -104,13 +183,37 @@ class PettingZooVectorWrapper:
         return obs_stacked, rewards_array, terminated_array, truncated_array, infos_list
 
     def render(self, mode="human"):
+        """
+        Render the environment.
+
+        Parameters
+        ----------
+        mode : str, optional
+            Rendering mode (default: "human").
+
+        Returns
+        -------
+        Any
+            Rendering output from the underlying environment.
+        """
         return self.env.render(mode=mode)
 
     def _dict_to_structured(self, data_dict):
         """
-        Converts a dict (keyed by agent names) into a structured object.
+        Convert a dict (keyed by agent names) into a structured object.
+
         If the per-agent data is composite (e.g. a dict), then each key is stacked
         separately.
+
+        Parameters
+        ----------
+        data_dict : dict
+            Dictionary mapping agent names to their data.
+
+        Returns
+        -------
+        dict or array
+            Structured data with agent dimension stacked.
         """
         # Build a list of per-agent observations in fixed order.
         obs_list = [data_dict[agent] for agent in self.agents]
@@ -118,8 +221,19 @@ class PettingZooVectorWrapper:
 
     def _structured_to_dict(self, structured_data):
         """
-        Converts a structured (vectorized) action input into a dict keyed by agent names.
+        Convert structured (vectorized) action input into a dict keyed by agent names.
+
         It "un-stacks" the leading agent dimension while preserving the overall structure.
+
+        Parameters
+        ----------
+        structured_data : dict or array
+            Structured data with leading agent dimension.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping agent names to per-agent data.
         """
         actions_list = self._unstack_structure(structured_data, len(self.agents))
         return {agent: actions_list[i] for i, agent in enumerate(self.agents)}
@@ -127,8 +241,19 @@ class PettingZooVectorWrapper:
     def _stack_structure(self, data_list):
         """
         Recursively stack a list of data items while preserving their structure.
+
         If each item is a dict (with the same keys), return a dict where each key maps
         to a NumPy array stacking the corresponding values over the agent dimension.
+
+        Parameters
+        ----------
+        data_list : list
+            List of data items to stack.
+
+        Returns
+        -------
+        dict or array
+            Stacked structure with agent dimension as the first axis.
         """
         if isinstance(data_list[0], dict):
             return {k: self._stack_structure([d[k] for d in data_list]) for k in data_list[0]}
@@ -137,8 +262,21 @@ class PettingZooVectorWrapper:
 
     def _unstack_structure(self, data, num_agents):
         """
-        Inverse of _stack_structure: given structured data with a leading agent dimension,
-        return a list of per-agent data items.
+        Inverse of _stack_structure: given structured data with a leading agent dimension.
+
+        Return a list of per-agent data items.
+
+        Parameters
+        ----------
+        data : dict or array
+            Structured data with leading agent dimension.
+        num_agents : int
+            Number of agents.
+
+        Returns
+        -------
+        list
+            List of per-agent data items.
         """
         if isinstance(data, dict):
             # Recursively unstack each key.
@@ -151,6 +289,12 @@ class PettingZooVectorWrapper:
 
 # Test function for the wrapper.
 def test_pettingzoo_vector_wrapper():
+    """
+    Test function for the PettingZooVectorWrapper.
+
+    Creates a dummy environment, wraps it, and tests the reset and step functionality
+    to ensure the wrapper correctly converts between dict-based and vectorized APIs.
+    """
     # Create the dummy environment and wrap it.
     dummy_env = DummyPettingZooEnv()
     wrapped_env = PettingZooVectorWrapper(dummy_env)

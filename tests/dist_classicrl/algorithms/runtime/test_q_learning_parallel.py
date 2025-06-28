@@ -5,12 +5,10 @@ This module contains comprehensive tests for all methods and functionality
 of the ParallelQLearning class from the q_learning_parallel module.
 """
 
-import multiprocessing as mp
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from gymnasium.vector import SyncVectorEnv
 
 from dist_classicrl.algorithms.runtime.q_learning_parallel import ParallelQLearning
 from dist_classicrl.environments.custom_env import DistClassicRLEnv

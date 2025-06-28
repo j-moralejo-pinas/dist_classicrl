@@ -1,4 +1,4 @@
-"""This module contains the implementation of multi-agent Q-learning for the Repsol project."""
+"""Multi-agent Q-learning trainer implementation in a single process."""
 
 from typing import List, Optional, Tuple, Union
 
@@ -6,7 +6,9 @@ import numpy as np
 from gymnasium.vector import SyncVectorEnv
 from numpy.typing import NDArray
 
-from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
+from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
+    OptimalQLearningBase,
+)
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 

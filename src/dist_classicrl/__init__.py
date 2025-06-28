@@ -1,3 +1,10 @@
+"""
+Distributed Classic Reinforcement Learning Library.
+
+This package provides distributed implementations of classic reinforcement learning
+algorithms with support for parallel training and scalable deployment.
+"""
+
 import sys
 
 if sys.version_info[:2] >= (3, 8):

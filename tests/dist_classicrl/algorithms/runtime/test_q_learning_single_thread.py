@@ -14,80 +14,13 @@ from gymnasium.vector import SyncVectorEnv
 from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
     SingleThreadQLearning,
 )
-from dist_classicrl.environments.custom_env import DistClassicRLEnv
-
-
-class MockEnvironment(DistClassicRLEnv):
-    """Mock environment for testing purposes."""
-
-    def __init__(self, num_envs=1, return_dict=False):
-        super().__init__()
-        self.num_envs = num_envs
-        self.return_dict = return_dict
-        self.observation_space = None
-        self.action_space = None
-        self._step_count = 0
-        self._max_steps = 10
-
-    def step(self, actions):
-        """Mock step function."""
-        self._step_count += 1
-
-        if self.return_dict:
-            next_states = {
-                "observation": np.array([self._step_count] * self.num_envs, dtype=np.int32),
-                "action_mask": np.ones((self.num_envs, 3), dtype=np.int32),
-            }
-        else:
-            next_states = np.array([self._step_count] * self.num_envs, dtype=np.int32)
-
-        rewards = np.array([1.0] * self.num_envs, dtype=np.float32)
-        terminated = np.array([self._step_count >= self._max_steps] * self.num_envs, dtype=bool)
-        truncated = np.array([False] * self.num_envs, dtype=bool)
-        infos = [{}] * self.num_envs
-
-        return next_states, rewards, terminated, truncated, infos
-
-    def reset(self, seed=None, options=None):
-        """Mock reset function."""
-        self._step_count = 0
-
-        if self.return_dict:
-            states = {
-                "observation": np.array([0] * self.num_envs, dtype=np.int32),
-                "action_mask": np.ones((self.num_envs, 3), dtype=np.int32),
-            }
-        else:
-            states = np.array([0] * self.num_envs, dtype=np.int32)
-
-        infos = [{}] * self.num_envs
-        return states, infos
-
-    def close(self):
-        """Mock close function."""
-        pass
-
-    def render(self):
-        """Mock render function."""
-        pass
-
-    def seed(self, seed):
-        """Mock seed function."""
-        pass
-
-    def get_env_info(self):
-        """Mock get_env_info function."""
-        return {}
-
-    def get_agent_info(self):
-        """Mock get_agent_info function."""
-        return {}
+from tests.utils.mock_env import MockEnvironment
 
 
 class TestSingleThreadQLearning:
     """Test class for SingleThreadQLearning."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures before each test method."""
         self.state_size = 10
         self.action_size = 3
@@ -101,7 +34,7 @@ class TestSingleThreadQLearning:
             min_exploration_rate=0.01,
         )
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test proper initialization of the SingleThreadQLearning class."""
         assert self.agent.state_size == 10
         assert self.agent.action_size == 3
@@ -113,7 +46,7 @@ class TestSingleThreadQLearning:
         assert self.agent.q_table.shape == (10, 3)
         assert np.all(self.agent.q_table == 0)
 
-    def test_train_with_simple_env(self):
+    def test_train_with_simple_env(self) -> None:
         """Test training with a simple mock environment."""
         env = MockEnvironment(num_envs=1, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)
@@ -133,7 +66,7 @@ class TestSingleThreadQLearning:
                 # Verify learn was called
                 assert mock_learn.called
 
-    def test_train_with_dict_observation_env(self):
+    def test_train_with_dict_observation_env(self) -> None:
         """Test training with an environment that returns dict observations."""
         env = MockEnvironment(num_envs=1, return_dict=True)
         val_env = MockEnvironment(num_envs=1, return_dict=True)
@@ -153,7 +86,7 @@ class TestSingleThreadQLearning:
                 # Verify learn was called with action_mask
                 mock_learn.assert_called()
 
-    def test_train_with_validation_episodes(self):
+    def test_train_with_validation_episodes(self) -> None:
         """Test training with validation by episodes instead of steps."""
         env = MockEnvironment(num_envs=1, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)
@@ -169,7 +102,7 @@ class TestSingleThreadQLearning:
                     val_episodes=2,
                 )
 
-    def test_train_invalid_validation_params(self):
+    def test_train_invalid_validation_params(self) -> None:
         """Test that training raises assertion error with invalid validation params."""
         env = MockEnvironment(num_envs=1, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)
@@ -191,7 +124,7 @@ class TestSingleThreadQLearning:
                 val_episodes=None,
             )
 
-    def test_evaluate_steps_simple_env(self):
+    def test_evaluate_steps_simple_env(self) -> None:
         """Test evaluation with steps on a simple environment."""
         env = MockEnvironment(num_envs=2, return_dict=False)
 
@@ -201,7 +134,7 @@ class TestSingleThreadQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_steps_dict_observation_env(self):
+    def test_evaluate_steps_dict_observation_env(self) -> None:
         """Test evaluation with steps on a dict observation environment."""
         env = MockEnvironment(num_envs=2, return_dict=True)
 
@@ -211,7 +144,7 @@ class TestSingleThreadQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_episodes_simple_env(self):
+    def test_evaluate_episodes_simple_env(self) -> None:
         """Test evaluation with episodes on a simple environment."""
         env = MockEnvironment(num_envs=2, return_dict=False)
 
@@ -221,7 +154,7 @@ class TestSingleThreadQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_episodes_dict_observation_env(self):
+    def test_evaluate_episodes_dict_observation_env(self) -> None:
         """Test evaluation with episodes on a dict observation environment."""
         env = MockEnvironment(num_envs=2, return_dict=True)
 
@@ -231,7 +164,7 @@ class TestSingleThreadQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_train_with_vectorized_env(self):
+    def test_train_with_vectorized_env(self) -> None:
         """Test training with vectorized environment."""
         # Create a mock SyncVectorEnv
         mock_env = MagicMock(spec=SyncVectorEnv)
@@ -258,7 +191,7 @@ class TestSingleThreadQLearning:
                     val_episodes=None,
                 )
 
-    def test_inheritance_from_optimal_q_learning_base(self):
+    def test_inheritance_from_optimal_q_learning_base(self) -> None:
         """Test that SingleThreadQLearning properly inherits from OptimalQLearningBase."""
         from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
             OptimalQLearningBase,
@@ -272,7 +205,7 @@ class TestSingleThreadQLearning:
         assert hasattr(self.agent, "get_q_value")
         assert hasattr(self.agent, "set_q_value")
 
-    def test_reward_accumulation_during_training(self):
+    def test_reward_accumulation_during_training(self) -> None:
         """Test that rewards are properly accumulated during training."""
         env = MockEnvironment(num_envs=2, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)

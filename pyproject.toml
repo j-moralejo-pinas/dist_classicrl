@@ -40,13 +40,13 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy", "pre-commit"]
+dev = ["pytest", "black", "mypy", "pre-commit", "isort", "sphinx", "sphinx-autoapi"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 addopts = "-ra --strict-markers"
 # norecursedirs = ["build", "dist"]
-testpaths = ["tests"]
+testpaths = ["tests/dist_classicrl"]
 
 [tool.black]
 line-length = 100
@@ -54,3 +54,9 @@ line-length = 100
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.pylint."Main"]
+source-roots = ["src"]
+
+[tool.pylint."Format"]
+max-line-length = 100

@@ -1,3 +1,5 @@
+"""TicTacToe environment for reinforcement learning."""
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import gymnasium as gym
@@ -56,6 +58,27 @@ class TicTacToeEnv(gym.Env):
     def _apply_move(
         self, move: int, mark: int
     ) -> Optional[Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]]:
+        """
+        Apply a move to the board and check for game termination.
+
+        Parameters
+        ----------
+        move : int
+            Move index (0-8) representing the position on the board.
+        mark : int
+            Player mark (1 or 2) to place on the board.
+
+        Returns
+        -------
+        Optional[Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]]
+            If the game ends after this move, returns the step result tuple.
+            Otherwise, returns None.
+
+        Raises
+        ------
+        AssertionError
+            If the move is invalid (position already occupied).
+        """
         row, col = divmod(move, 3)
         assert self.board[row, col] == 0, "Invalid move."
         self.board[row, col] = mark
@@ -67,7 +90,26 @@ class TicTacToeEnv(gym.Env):
         return None
 
     def step(self, action: int) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
-        """ """
+        """
+        Execute one step in the environment with the given action.
+
+        The agent makes a move, then the machine (if game continues) makes a move.
+
+        Parameters
+        ----------
+        action : int
+            Action index (0-8) representing the position to place the agent's mark.
+
+        Returns
+        -------
+        Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]
+            Tuple containing:
+            - observation: Current board state and action mask
+            - reward: Reward for the agent (1 for win, -1 for loss, 0 otherwise)
+            - terminated: Whether the game has ended
+            - truncated: Whether the game was truncated (always False)
+            - info: Additional information (empty dict)
+        """
         # Agent's move.
         result = self._apply_move(action, self.agent_mark)
         if result is not None:
@@ -82,16 +124,47 @@ class TicTacToeEnv(gym.Env):
         return self._get_obs(), 0, False, False, {}
 
     def _get_machine_move(self) -> int:
+        """
+        Get a random valid move for the machine player.
+
+        Returns
+        -------
+        int
+            Index (0-8) of a valid move on the board.
+
+        Raises
+        ------
+        AssertionError
+            If no valid moves are available.
+        """
         # Get a random valid move for the machine.
         valid_moves = self._get_valid_moves()
         assert valid_moves, "There should be at least one valid move."
         return self._np_random.choice(valid_moves)
 
     def _get_valid_moves(self) -> List[int]:
+        """
+        Get a list of valid move indices where the board is empty.
+
+        Returns
+        -------
+        List[int]
+            List of indices (0-8) representing empty positions on the board.
+        """
         # Return a list of indices (0-8) where the board is empty.
         return [i for i in range(9) if self.board.flat[i] == 0]
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
+        """
+        Get the current observation of the environment.
+
+        Returns
+        -------
+        Dict[str, np.ndarray]
+            Dictionary containing:
+            - 'observation': Flattened board state as a (9,) array
+            - 'action_mask': Binary mask indicating valid moves as a (9,) array
+        """
         # Flatten the board to a (9,) vector.
         obs_board = self.board.flatten()
         # Create the action mask: 1 indicates an empty cell (legal move), 0 otherwise.
@@ -99,6 +172,14 @@ class TicTacToeEnv(gym.Env):
         return {"observation": obs_board, "action_mask": action_mask}
 
     def _check_winner(self) -> Optional[int]:
+        """
+        Check if there is a winner on the current board.
+
+        Returns
+        -------
+        Optional[int]
+            The mark (1 or 2) of the winning player, or None if no winner.
+        """
         b = self.board
         # Check rows.
         for i in range(3):
@@ -114,9 +195,18 @@ class TicTacToeEnv(gym.Env):
         return None
 
     def render(self, mode="human") -> None:
+        """
+        Render the current state of the board.
+
+        Parameters
+        ----------
+        mode : str, optional
+            Rendering mode (default: "human"). Currently only "human" is supported.
+        """
         symbol = {0: " ", 1: "X", 2: "O"}
         board_str = "\n".join("|".join(symbol[val] for val in row) for row in self.board)
         print(board_str)
 
     def close(self) -> None:
+        """Close the environment and clean up resources."""
         pass

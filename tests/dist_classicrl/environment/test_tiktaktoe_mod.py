@@ -1,4 +1,5 @@
-import array
+"""Test suite for the TicTacToe environment implementation."""
+
 import random
 
 import numpy as np
@@ -7,7 +8,8 @@ import pytest
 from dist_classicrl.environments.tiktaktoe_mod import TicTacToeEnv
 
 
-def test_check_winner():
+def test_check_winner() -> None:
+    """Test the winner detection functionality for various board configurations."""
     env = TicTacToeEnv()
     env.board = np.zeros((3, 3), dtype=np.int8)
     assert env._check_winner() is None, "No winner should be detected on an empty board."
@@ -37,7 +39,8 @@ def test_check_winner():
     assert env._check_winner() == 1, "Player 1 should win with a vertical line."
 
 
-def test_get_valid_moves():
+def test_get_valid_moves() -> None:
+    """Test the valid moves detection for different board states."""
     env = TicTacToeEnv()
     env.board = np.zeros((3, 3), dtype=np.int8)
     valid_moves = env._get_valid_moves()
@@ -66,7 +69,8 @@ def test_get_valid_moves():
     assert len(valid_moves) == 0, "No valid moves should be available when the board is full."
 
 
-def test_get_obs():
+def test_get_obs() -> None:
+    """Test observation generation including board state and action mask."""
     env = TicTacToeEnv()
     env.board = np.zeros((3, 3), dtype=np.int8)
     obs = env._get_obs()
@@ -114,7 +118,8 @@ def test_get_obs():
     ), "Action mask should indicate no valid moves when the board is full."
 
 
-def test_get_machine_move():
+def test_get_machine_move() -> None:
+    """Test machine move selection logic and edge cases."""
     env = TicTacToeEnv()
     env.board = np.zeros((3, 3), dtype=np.int8)
     env._np_random = np.random.default_rng(seed=42)  # Set a seed for reproducibility
@@ -142,7 +147,8 @@ def test_get_machine_move():
         env._get_machine_move()
 
 
-def test_apply_move():
+def test_apply_move() -> None:
+    """Test move application, win detection, and game termination conditions."""
     env = TicTacToeEnv()
     env.board = np.zeros((3, 3), dtype=np.int8)
     env.agent_mark = 1
@@ -258,7 +264,8 @@ def test_apply_move():
         env._apply_move(0, env.machine_mark)
 
 
-def test_reset():
+def test_reset() -> None:
+    """Test environment reset functionality and initial state validation."""
     env = TicTacToeEnv()
     obs, info = env.reset()
     assert "observation" in obs
@@ -268,7 +275,8 @@ def test_reset():
     assert np.where(obs["action_mask"])[0].size > 0, "No valid moves available at reset."
 
 
-def test_step():
+def test_step() -> None:
+    """Test the step function with agent and machine moves."""
     env = TicTacToeEnv()
     env._np_random = np.random.default_rng(seed=42)
     env.board = np.zeros((3, 3), dtype=np.int8)
@@ -286,7 +294,8 @@ def test_step():
     ), "There should be 7 valid moves after the first move."
 
 
-def test_running_environment():
+def test_running_environment() -> None:
+    """Test running complete games to ensure environment stability and correctness."""
     env = TicTacToeEnv()
 
     for i in range(100):

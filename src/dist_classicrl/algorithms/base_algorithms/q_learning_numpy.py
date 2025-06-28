@@ -1,3 +1,5 @@
+"""Multi-agent Q-learning base implementation using NumPy."""
+
 import math
 import random
 from typing import Optional

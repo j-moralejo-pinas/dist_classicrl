@@ -1,4 +1,4 @@
-"""This module contains the implementation of multi-agent Q-learning for the Repsol project."""
+"""Multi-agent Q-learning trainer implementation using MPI."""
 
 import queue
 import threading
@@ -9,7 +9,9 @@ from gymnasium.vector import SyncVectorEnv
 from mpi4py import MPI
 from numpy.typing import NDArray
 
-from dist_classicrl.algorithms.runtime.q_learning_single_thread import OptimalQLearningBase
+from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
+    OptimalQLearningBase,
+)
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 comm = MPI.COMM_WORLD
@@ -20,7 +22,11 @@ MASTER_RANK = 0
 
 class DistAsyncQLearning(OptimalQLearningBase):
     """
-    Single environment Q-learning agent.
+    Distributed asynchronous Q-learning implementation using MPI.
+
+    This class implements a distributed Q-learning algorithm where multiple worker
+    nodes run environments in parallel and a master node coordinates training and
+    evaluation. The implementation uses MPI for communication between nodes.
 
     Attributes
     ----------
@@ -40,8 +46,14 @@ class DistAsyncQLearning(OptimalQLearningBase):
         Decay rate for exploration rate.
     min_exploration_rate : float
         Minimum exploration rate.
-    q_table : mp.Array
-        Shared memory array for the Q-table.
+    q_table : NDArray[np.float32]
+        Q-table for storing state-action values.
+    stable_q_table : NDArray[np.float32]
+        Stable copy of Q-table for evaluation.
+    experience_queue : queue.Queue
+        Queue for storing experience tuples.
+    batch_size : int
+        Batch size for learning updates.
     """
 
     num_agents: int
@@ -65,6 +77,24 @@ class DistAsyncQLearning(OptimalQLearningBase):
         val_steps: Optional[int],
         val_episodes: Optional[int],
     ) -> None:
+        """
+        Update Q-table using experiences from the experience queue.
+
+        This method runs in a separate thread and continuously processes experiences
+        from the queue to update the Q-table. It also handles validation at
+        specified intervals.
+
+        Parameters
+        ----------
+        val_env : Union[DistClassicRLEnv, SyncVectorEnv]
+            Environment for validation.
+        val_every_n_steps : int
+            Number of steps between validation runs.
+        val_steps : Optional[int]
+            Number of steps for validation (mutually exclusive with val_episodes).
+        val_episodes : Optional[int]
+            Number of episodes for validation (mutually exclusive with val_steps).
+        """
         running = True
         val_reward_history = []
         val_agent_reward_history = []
@@ -136,6 +166,23 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 print(f"Validation reward: {val_total_rewards:.2f}")
 
     def communicate_master(self, steps: int) -> List[float]:
+        """
+        Handle communication between master and worker nodes.
+
+        This method runs on the master node and coordinates with worker nodes
+        to collect experiences and send actions. It manages the training loop
+        and collects reward history.
+
+        Parameters
+        ----------
+        steps : int
+            Total number of training steps to run.
+
+        Returns
+        -------
+        List[float]
+            History of episode rewards collected during training.
+        """
         num_workers = NUM_NODES - 1
         reward_history = []
         worker_rewards = [np.array(()) for _ in range(num_workers)]
@@ -226,6 +273,18 @@ class DistAsyncQLearning(OptimalQLearningBase):
         return reward_history
 
     def run_environment(self, env: Union[DistClassicRLEnv, SyncVectorEnv]):
+        """
+        Run environment on worker nodes.
+
+        This method runs on worker nodes and handles environment execution.
+        It sends environment states to the master node and receives actions
+        to execute, creating a continuous loop of environment interaction.
+
+        Parameters
+        ----------
+        env : Union[DistClassicRLEnv, SyncVectorEnv]
+            Environment instance to run on this worker node.
+        """
         status = MPI.Status()
         states, infos = env.reset()
         rewards = 0

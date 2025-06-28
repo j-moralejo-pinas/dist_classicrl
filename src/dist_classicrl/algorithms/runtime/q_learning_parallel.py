@@ -1,4 +1,4 @@
-"""This module contains the implementation of multi-agent Q-learning for the Repsol project."""
+"""Multi-agent Q-learning trainer implementation using multiprocessing."""
 
 # TODO: Fix shared memory staying open after Ctrl+C
 
@@ -12,7 +12,9 @@ import numpy as np
 from gymnasium.vector import SyncVectorEnv
 from numpy.typing import NDArray
 
-from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
+from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
+    OptimalQLearningBase,
+)
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 

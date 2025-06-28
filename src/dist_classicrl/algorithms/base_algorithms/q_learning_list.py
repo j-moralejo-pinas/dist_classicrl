@@ -1,10 +1,10 @@
+"""Multi-agent Q-learning  implementation using lists."""
+
 import math
-import multiprocessing as mp
 import random
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import List, Optional
 
 import numpy as np
-from numpy.typing import NDArray
 
 
 class MultiAgentQLearningLists:

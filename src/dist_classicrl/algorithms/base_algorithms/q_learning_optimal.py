@@ -1,3 +1,5 @@
+"""Multi-agent Q-learning base implementation using lists or numpy arrays when appropriate"""
+
 import math
 import random
 from typing import List, Optional, Union
