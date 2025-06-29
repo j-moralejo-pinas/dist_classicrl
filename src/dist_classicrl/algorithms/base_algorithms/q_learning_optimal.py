@@ -1,17 +1,30 @@
-"""Multi-agent Q-learning base implementation using lists or numpy arrays when appropriate"""
+"""Multi-agent Q-learning base implementation using lists or numpy arrays when appropriate."""
+
+from __future__ import annotations
 
 import math
 import random
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+NUM_STATES_LEARN_THRESHOLD = 10
+NO_ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_ITER = 10
+NO_ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_VEC_ITER = 1000
+NO_ACTION_MASKS_NO_DETERMINISTIC_NUM_STATES_ITER = 100
+ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_ITER = 10
+ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_VEC_ITER = 1000
+ACTION_MASKS_NO_DETERMINISTIC_ACTION_SIZE_ITER = 10
 
 
 class OptimalQLearningBase:
     """
-    Base Q-learning class that implements the Q-learning algorithm
-    in different ways for different scenarios, giving the best performance
+    Base Q-learning class that implements the Q-learning algorithm.
+
+    It is implemented in different ways for different scenarios, giving the best performance
     at each case.
 
     Attributes
@@ -42,16 +55,18 @@ class OptimalQLearningBase:
     exploration_decay: float
     min_exploration_rate: float
     q_table: NDArray[np.float64]
+    _rng: np.random.Generator
 
     def __init__(
         self,
-        state_size: Union[int, np.integer],
-        action_size: Union[int, np.integer],
+        state_size: int | np.integer,
+        action_size: int | np.integer,
         learning_rate: float = 0.1,
         discount_factor: float = 0.97,
         exploration_rate: float = 1.0,
         exploration_decay: float = 0.999,
         min_exploration_rate: float = 0.01,
+        seed: int | None = None,
     ) -> None:
         """
         Initialize the MultiAgentQLearning class.
@@ -72,6 +87,8 @@ class OptimalQLearningBase:
             Decay rate for exploration rate, by default 0.995.
         min_exploration_rate : float, optional
             Minimum exploration rate, by default 0.01.
+        seed : int | None, optional
+            Random seed for reproducibility, by default None.
         """
         self.state_size = int(state_size)
         self.action_size = int(action_size)
@@ -81,6 +98,7 @@ class OptimalQLearningBase:
         self.exploration_decay = exploration_decay
         self.min_exploration_rate = min_exploration_rate
         self.q_table = np.zeros((state_size, action_size))
+        self._rng = np.random.default_rng(seed)
 
     def get_q_value(self, state: int, action: int) -> float:
         """
@@ -216,6 +234,7 @@ class OptimalQLearningBase:
     def choose_action(
         self,
         state: int,
+        *,
         deterministic: bool = False,
     ) -> int:
         """
@@ -251,7 +270,7 @@ class OptimalQLearningBase:
         return -1
 
     def choose_masked_action(
-        self, state: int, action_mask: List[int], deterministic: bool = False
+        self, state: int, action_mask: list[int], *, deterministic: bool = False
     ) -> int:
         """
         Choose an action based on the current state.
@@ -292,8 +311,9 @@ class OptimalQLearningBase:
     def choose_actions_iter(
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
+        action_masks: NDArray[np.int32] | None = None,
     ) -> NDArray[np.int32]:
         """
         Choose actions for all agents based on the current states.
@@ -314,13 +334,13 @@ class OptimalQLearningBase:
         """
         if action_masks is None:
             return np.fromiter(
-                (self.choose_action(state, deterministic) for state in states),
+                (self.choose_action(state, deterministic=deterministic) for state in states),
                 dtype=np.int32,
                 count=len(states),
             )
         return np.fromiter(
             (
-                self.choose_masked_action(state, action_mask, deterministic)
+                self.choose_masked_action(state, action_mask, deterministic=deterministic)
                 for state, action_mask in zip(states, action_masks)
             ),
             dtype=np.int32,
@@ -330,6 +350,7 @@ class OptimalQLearningBase:
     def choose_action_vec(
         self,
         state: int,
+        *,
         deterministic: bool = False,
     ) -> int:
         """
@@ -356,7 +377,8 @@ class OptimalQLearningBase:
     def choose_masked_action_vec(
         self,
         state: int,
-        action_mask: List[int],
+        action_mask: list[int],
+        *,
         deterministic: bool = False,
     ) -> int:
         """
@@ -392,8 +414,9 @@ class OptimalQLearningBase:
     def choose_actions_vec_iter(
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
+        action_masks: NDArray[np.int32] | None = None,
     ) -> NDArray[np.int32]:
         """
         Choose actions for all agents based on the current states.
@@ -414,13 +437,13 @@ class OptimalQLearningBase:
         """
         if action_masks is None:
             return np.fromiter(
-                (self.choose_action_vec(state, deterministic) for state in states),
+                (self.choose_action_vec(state, deterministic=deterministic) for state in states),
                 dtype=np.int32,
                 count=len(states),
             )
         return np.fromiter(
             (
-                self.choose_masked_action_vec(state, action_mask, deterministic)
+                self.choose_masked_action_vec(state, action_mask, deterministic=deterministic)
                 for state, action_mask in zip(states, action_masks)
             ),
             dtype=np.int32,
@@ -430,6 +453,7 @@ class OptimalQLearningBase:
     def choose_actions_vec(
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
     ) -> NDArray[np.int32]:
         """
@@ -450,9 +474,9 @@ class OptimalQLearningBase:
         max_q_values: NDArray[np.float32] = np.max(self.q_table[states], axis=1, keepdims=True)
 
         if not deterministic:
-            explore_flags = np.random.rand(states.size) < self.exploration_rate
-            exploratory_actions = np.random.randint(self.action_size, size=states.size)
-            chosen_actions_per_state = np.fromiter(
+            explore_flags = self._rng.random(states.size) < self.exploration_rate
+            exploratory_actions = self._rng.integers(self.action_size, size=states.size)
+            return np.fromiter(
                 (
                     (
                         random.choice(np.where(q_value == max_q_value)[0])
@@ -466,9 +490,8 @@ class OptimalQLearningBase:
                 dtype=np.int32,
                 count=states.size,
             )
-            return chosen_actions_per_state
 
-        best_actions_per_state = np.fromiter(
+        return np.fromiter(
             (
                 random.choice(np.where(q_value == max_q_value)[0])
                 for q_value, max_q_value in zip(self.q_table[states], max_q_values)
@@ -477,12 +500,11 @@ class OptimalQLearningBase:
             count=states.size,
         )
 
-        return best_actions_per_state
-
     def choose_masked_actions_vec(
         self,
         states: NDArray[np.int32],
         action_masks: NDArray[np.int32],
+        *,
         deterministic: bool = False,
     ) -> NDArray[np.int32]:
         """
@@ -511,8 +533,8 @@ class OptimalQLearningBase:
         max_q_values: NDArray[np.float32] = np.max(masked_q_values_vec, axis=1, keepdims=True)
 
         if not deterministic:
-            explore_flags = np.random.rand(states.size) < self.exploration_rate
-            chosen_actions_per_state = np.fromiter(
+            explore_flags = self._rng.random(states.size) < self.exploration_rate
+            return np.fromiter(
                 (
                     (
                         random.choice(np.where(masked_q_value == max_q_value)[0])
@@ -526,9 +548,8 @@ class OptimalQLearningBase:
                 dtype=np.int32,
                 count=states.size,
             )
-            return chosen_actions_per_state
 
-        best_actions_per_state = np.fromiter(
+        return np.fromiter(
             (
                 random.choice(np.where(masked_q_value == max_q_value)[0])
                 for masked_q_value, max_q_value in zip(masked_q_values_vec, max_q_values)
@@ -536,13 +557,13 @@ class OptimalQLearningBase:
             dtype=np.int32,
             count=states.size,
         )
-        return best_actions_per_state
 
-    def choose_actions(
+    def choose_actions(  # noqa: PLR0911
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
+        action_masks: NDArray[np.int32] | None = None,
     ) -> NDArray[np.int32]:
         """
         Choose actions for all agents based on the current states.
@@ -561,32 +582,32 @@ class OptimalQLearningBase:
         NDArray[np.int32]
             Actions chosen for all agents.
         """
-        if action_masks is None:
-            if deterministic:
-                if self.action_size <= 10:
-                    return self.choose_actions_iter(states, deterministic)
-                if self.action_size > 1000:
-                    return self.choose_actions_vec_iter(states, deterministic)
-                return self.choose_actions_vec(states, deterministic)
-            if len(states) < 100:
-                return self.choose_actions_iter(states, deterministic)
-            if self.action_size < 100:
-                return self.choose_actions_vec(states, deterministic)
-            return self.choose_actions_vec(states, deterministic)
         if deterministic:
-            if self.action_size <= 10:
-                return self.choose_actions_iter(states, deterministic, action_masks)
-            if self.action_size > 1000:
-                return self.choose_actions_vec_iter(states, deterministic, action_masks)
-            return self.choose_masked_actions_vec(states, action_masks, deterministic)
-        if self.action_size <= 10:
-            return self.choose_actions_iter(states, deterministic, action_masks)
-        return self.choose_actions_vec_iter(states, deterministic, action_masks)
+            if self.action_size <= NO_ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_ITER:
+                return self.choose_actions_iter(states, deterministic=deterministic)
+            if self.action_size > NO_ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_VEC_ITER:
+                return self.choose_actions_vec_iter(states, deterministic=deterministic)
+            if action_masks is not None:
+                return self.choose_masked_actions_vec(
+                    states, action_masks, deterministic=deterministic
+                )
+            return self.choose_actions_vec(states, deterministic=deterministic)
+
+        if action_masks is None:
+            if len(states) < NO_ACTION_MASKS_NO_DETERMINISTIC_NUM_STATES_ITER:
+                return self.choose_actions_iter(states, deterministic=deterministic)
+            return self.choose_actions_vec(states, deterministic=deterministic)
+
+        if self.action_size <= ACTION_MASKS_NO_DETERMINISTIC_ACTION_SIZE_ITER:
+            return self.choose_actions_iter(
+                states, deterministic=deterministic, action_masks=action_masks
+            )
+        return self.choose_actions_vec_iter(
+            states, deterministic=deterministic, action_masks=action_masks
+        )
 
     def update_explore_rate(self) -> None:
-        """
-        Update the exploration rate.
-        """
+        """Update the exploration rate."""
         self.exploration_rate = max(
             self.min_exploration_rate, self.exploration_rate * self.exploration_decay
         )
@@ -597,8 +618,8 @@ class OptimalQLearningBase:
         action: int,
         reward: float,
         next_state: int,
-        terminated: bool,
-        next_action_mask: Optional[NDArray[np.int32]] = None,
+        terminated: bool,  # noqa: FBT001
+        next_action_mask: NDArray[np.int32] | None = None,
     ) -> None:
         """
         Update Q-table based on the agent's experience.
@@ -635,7 +656,7 @@ class OptimalQLearningBase:
         rewards: NDArray[np.float32],
         next_states: NDArray[np.int32],
         terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        next_action_masks: NDArray[np.int32] | None = None,
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -676,7 +697,7 @@ class OptimalQLearningBase:
         rewards: NDArray[np.float32],
         next_states: NDArray[np.int32],
         terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        next_action_masks: NDArray[np.int32] | None = None,
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -701,7 +722,7 @@ class OptimalQLearningBase:
         rewards: NDArray[np.float32],
         next_states: NDArray[np.int32],
         terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        next_action_masks: NDArray[np.int32] | None = None,
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -734,7 +755,7 @@ class OptimalQLearningBase:
         rewards: NDArray[np.float32],
         next_states: NDArray[np.int32],
         terminated: NDArray[np.bool],
-        next_action_masks: Optional[NDArray[np.int32]] = None,
+        next_action_masks: NDArray[np.int32] | None = None,
     ) -> None:
         """
         Update Q-table based on the agents' experiences.
@@ -750,7 +771,7 @@ class OptimalQLearningBase:
         next_states : NDArray[np.int32]
             Next states of all agents.
         """
-        if len(states) > 10:
+        if len(states) > NUM_STATES_LEARN_THRESHOLD:
             self.learn_vec(states, actions, rewards, next_states, terminated, next_action_masks)
         else:
             self.learn_iter(states, actions, rewards, next_states, terminated, next_action_masks)

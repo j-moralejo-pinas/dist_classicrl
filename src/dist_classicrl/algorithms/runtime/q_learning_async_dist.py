@@ -1,23 +1,30 @@
 """Multi-agent Q-learning trainer implementation using MPI."""
 
+from __future__ import annotations
+
+import logging
 import queue
 import threading
-from typing import Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
-from gymnasium.vector import VectorEnv
 from mpi4py import MPI
-from numpy.typing import NDArray
 
 from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
     OptimalQLearningBase,
 )
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
+if TYPE_CHECKING:
+    from gymnasium.vector import VectorEnv
+    from numpy.typing import NDArray
+
 comm = MPI.COMM_WORLD
 RANK = comm.Get_rank()
 NUM_NODES = comm.Get_size()
 MASTER_RANK = 0
+
+logger = logging.getLogger(__name__)
 
 
 class DistAsyncQLearning(OptimalQLearningBase):
@@ -72,10 +79,10 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
     def update_q_table(
         self,
-        val_env: Union[DistClassicRLEnv, VectorEnv],
+        val_env: DistClassicRLEnv | VectorEnv,
         val_every_n_steps: int,
-        val_steps: Optional[int],
-        val_episodes: Optional[int],
+        val_steps: int | None,
+        val_episodes: int | None,
     ) -> None:
         """
         Update Q-table using experiences from the experience queue.
@@ -162,9 +169,10 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
                 steps_since_val = 0
-                print(f"Validation reward: {val_total_rewards:.2f}")
+                logger.debug("Step %d, Eval total rewards: %s", step, val_total_rewards)
 
-    def communicate_master(self, steps: int) -> List[float]:
+    def communicate_master(self, steps: int) -> list[float]:  # noqa: C901 PLR0912
+        # TODO(Javier): Try to fix this
         """
         Handle communication between master and worker nodes.
 
@@ -185,7 +193,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
         num_workers = NUM_NODES - 1
         reward_history = []
         worker_rewards = [np.array(()) for _ in range(num_workers)]
-        worker_prev_states: List[Union[NDArray[np.int32], Dict[str, NDArray[np.int32]]]] = [
+        worker_prev_states: list[NDArray[np.int32] | dict[str, NDArray[np.int32]]] = [
             np.array(()) for _ in range(num_workers)
         ]
         requests = [comm.irecv(source=worker_id) for worker_id in range(1, num_workers + 1)]
@@ -193,78 +201,79 @@ class DistAsyncQLearning(OptimalQLearningBase):
         while step < steps:
             for worker_id, request in enumerate(requests):
                 test_flag, data = request.test()
-                if test_flag:
-                    assert data is not None, "Received None from worker"
-                    step += 1
-                    next_states, rewards, terminateds, truncateds, infos, firsts = data
+                if not test_flag:
+                    continue
+                assert data is not None, "Received None from worker"
+                step += 1
+                next_states, rewards, terminateds, truncateds, infos, firsts = data
+                if isinstance(next_states, dict):
+                    actions = self.choose_actions(
+                        next_states["observation"], action_masks=next_states["action_mask"]
+                    )
+                else:
+                    actions = self.choose_actions(next_states)
+                comm.isend(actions, dest=worker_id + 1, tag=1)
+                requests[worker_id] = comm.irecv(source=worker_id + 1)
+
+                if firsts[0]:
+                    worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
+                else:
+                    worker_rewards[worker_id] += rewards
                     if isinstance(next_states, dict):
-                        actions = self.choose_actions(
-                            next_states["observation"], action_masks=next_states["action_mask"]
-                        )
+                        for idx, (
+                            next_state,
+                            next_action_mask,
+                            reward,
+                            terminated,
+                            action,
+                        ) in enumerate(
+                            zip(
+                                next_states["observation"],
+                                next_states["action_mask"],
+                                rewards,
+                                terminateds,
+                                actions,
+                            )
+                        ):
+                            prev_states = worker_prev_states[worker_id]
+                            assert isinstance(prev_states, dict)
+                            self.experience_queue.put(
+                                (
+                                    prev_states["observation"][idx],
+                                    action,
+                                    reward,
+                                    {
+                                        "observation": next_state,
+                                        "action_mask": next_action_mask,
+                                    },
+                                    terminated,
+                                )
+                            )
                     else:
-                        actions = self.choose_actions(next_states)
-                    comm.isend(actions, dest=worker_id + 1, tag=1)
-                    requests[worker_id] = comm.irecv(source=worker_id + 1)
-
-                    if firsts[0]:
-                        worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
-                    else:
-                        worker_rewards[worker_id] += rewards
-                        if isinstance(next_states, dict):
-                            for idx, (
-                                next_state,
-                                next_action_mask,
-                                reward,
-                                terminated,
-                                action,
-                            ) in enumerate(
-                                zip(
-                                    next_states["observation"],
-                                    next_states["action_mask"],
-                                    rewards,
-                                    terminateds,
-                                    actions,
+                        for idx, (
+                            next_state,
+                            reward,
+                            terminated,
+                            action,
+                        ) in enumerate(zip(next_states, rewards, terminateds, actions)):
+                            prev_states = worker_prev_states[worker_id]
+                            assert not isinstance(prev_states, dict)
+                            self.experience_queue.put(
+                                (
+                                    prev_states[idx],
+                                    action,
+                                    reward,
+                                    next_state,
+                                    terminated,
                                 )
-                            ):
-                                prev_states = worker_prev_states[worker_id]
-                                assert isinstance(prev_states, dict)
-                                self.experience_queue.put(
-                                    (
-                                        prev_states["observation"][idx],
-                                        action,
-                                        reward,
-                                        {
-                                            "observation": next_state,
-                                            "action_mask": next_action_mask,
-                                        },
-                                        terminated,
-                                    )
-                                )
-                        else:
-                            for idx, (
-                                next_state,
-                                reward,
-                                terminated,
-                                action,
-                            ) in enumerate(zip(next_states, rewards, terminateds, actions)):
-                                prev_states = worker_prev_states[worker_id]
-                                assert not isinstance(prev_states, dict)
-                                self.experience_queue.put(
-                                    (
-                                        prev_states[idx],
-                                        action,
-                                        reward,
-                                        next_state,
-                                        terminated,
-                                    )
-                                )
+                            )
 
-                    for idx, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
-                        if terminated or truncated:
-                            reward_history.append(worker_rewards[worker_id][idx])
-                            worker_rewards[worker_id][idx] = 0
+                for idx, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+                    if terminated or truncated:
+                        reward_history.append(worker_rewards[worker_id][idx])
+                        worker_rewards[worker_id][idx] = 0
 
-                    worker_prev_states[worker_id] = next_states
+                worker_prev_states[worker_id] = next_states
                 if step >= steps:
                     self.experience_queue.put(None)
                     break
@@ -272,7 +281,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             comm.isend(None, dest=worker_id, tag=0)
         return reward_history
 
-    def run_environment(self, env: Union[DistClassicRLEnv, VectorEnv]):
+    def run_environment(self, env: DistClassicRLEnv | VectorEnv) -> None:
         """
         Run environment on worker nodes.
 
@@ -325,20 +334,21 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
     def train(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         steps: int,
-        val_env: Union[DistClassicRLEnv, VectorEnv],
+        val_env: DistClassicRLEnv | VectorEnv,
         val_every_n_steps: int,
-        val_steps: Optional[int],
-        val_episodes: Optional[int],
+        val_steps: int | None,
+        val_episodes: int | None,
         batch_size: int = 32,
     ) -> None:
         """
         Train the agent in the environment for a given number of steps.
+
         For the master node:
         First, launch 2 threads: one for updating the Q-table and one for communication from master.
         For the worker nodes:
-        Run the environment
+        Run the environment.
 
         Parameters
         ----------
@@ -371,7 +381,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             )
             update_thread.start()
             # Run the communication, queuing and metric logging in the main thread
-            reward_history = self.communicate_master(steps)
+            self.communicate_master(steps)
             update_thread.join()
         # Worker Nodes
         else:
@@ -379,9 +389,9 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
     def evaluate_steps(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         steps: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of steps.
 
@@ -398,10 +408,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         for _ in range(steps):
@@ -424,9 +431,9 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
     def evaluate_episodes(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         episodes: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of episodes.
 
@@ -443,10 +450,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         episode = 0

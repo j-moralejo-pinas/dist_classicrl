@@ -1,15 +1,23 @@
 """Multi-agent Q-learning trainer implementation in a single process."""
 
-from typing import List, Optional, Tuple, Union
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
-from gymnasium.vector import SyncVectorEnv
-from numpy.typing import NDArray
 
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
     OptimalQLearningBase,
 )
-from dist_classicrl.environments.custom_env import DistClassicRLEnv
+
+if TYPE_CHECKING:
+    from gymnasium.vector import SyncVectorEnv
+    from numpy.typing import NDArray
+
+    from dist_classicrl.environments.custom_env import DistClassicRLEnv
+
+logger = logging.getLogger(__name__)
 
 
 class SingleThreadQLearning(OptimalQLearningBase):
@@ -47,12 +55,12 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
     def train(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: DistClassicRLEnv | SyncVectorEnv,
         steps: int,
-        val_env: Union[DistClassicRLEnv, SyncVectorEnv],
+        val_env: DistClassicRLEnv | SyncVectorEnv,
         val_every_n_steps: int,
-        val_steps: Optional[int],
-        val_episodes: Optional[int],
+        val_steps: int | None,
+        val_episodes: int | None,
     ) -> None:
         """
         Train the agent in the environment for a given number of steps.
@@ -75,10 +83,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
         )
 
         states, infos = env.reset()
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         reward_history = []
         val_reward_history = []
         val_agent_reward_history = []
@@ -126,13 +131,13 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
-                print(f"Step {step + 1}, Eval total rewards: {val_total_rewards}")
+                logger.debug("Step %d, Eval total rewards: %s", step + 1, val_total_rewards)
 
     def evaluate_steps(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: DistClassicRLEnv | SyncVectorEnv,
         steps: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of steps.
 
@@ -149,10 +154,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         for _ in range(steps):
@@ -175,9 +177,9 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
     def evaluate_episodes(
         self,
-        env: Union[DistClassicRLEnv, SyncVectorEnv],
+        env: DistClassicRLEnv | SyncVectorEnv,
         episodes: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of episodes.
 
@@ -194,10 +196,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         episode = 0

@@ -1,8 +1,6 @@
-"""This module implements an Experience Replay buffer for storing
-and sampling experiences in reinforcement learning.
-"""
+"""Experience Replay buffer for storing and sampling experiences in reinforcement learning."""
 
-from typing import Tuple
+from __future__ import annotations
 
 import numpy as np
 
@@ -39,8 +37,9 @@ class ExperienceReplay:
     done_buffer: np.typing.NDArray[np.bool_]
     position: int
     full: bool
+    rng: np.random.Generator
 
-    def __init__(self, capacity: int) -> None:
+    def __init__(self, capacity: int, seed: int) -> None:
         """
         Initialize the Experience Replay buffer.
 
@@ -48,6 +47,8 @@ class ExperienceReplay:
         ----------
         capacity : int
             Maximum number of experiences to store in the buffer.
+        seed : int
+            Random seed for reproducibility.
         """
         self.capacity = capacity
         self.state_buffer = np.empty((capacity,), dtype=int)
@@ -57,8 +58,9 @@ class ExperienceReplay:
         self.done_buffer = np.empty((capacity,), dtype=bool)
         self.position = 0
         self.full = False
+        self.rng = np.random.default_rng(seed)
 
-    def push(self, experience: Tuple[int, int, float, int, bool]) -> None:
+    def push(self, experience: tuple[int, int, float, int, bool]) -> None:
         """
         Add a new experience to the buffer.
 
@@ -76,7 +78,7 @@ class ExperienceReplay:
         self.position = (self.position + 1) % self.capacity
         self.full = self.full or self.position == 0
 
-    def sample(self, batch_size: int) -> Tuple[int, int, float, int, bool]:
+    def sample(self, batch_size: int) -> tuple[int, int, float, int, bool]:
         """
         Sample a batch of experiences from the buffer.
 
@@ -91,7 +93,7 @@ class ExperienceReplay:
             A tuple containing arrays of states, actions, rewards,
             next states, and done flags.
         """
-        indices = np.random.choice(
+        indices = self.rng.choice(
             self.capacity if self.full else self.position, batch_size, replace=False
         )
         return (

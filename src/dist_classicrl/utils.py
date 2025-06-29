@@ -1,6 +1,4 @@
-"""
-Utilities for working with discrete action spaces.
-"""
+"""Utilities for working with discrete action spaces."""
 
 import numpy as np
 from numpy.typing import NDArray

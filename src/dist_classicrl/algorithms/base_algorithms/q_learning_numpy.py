@@ -1,11 +1,19 @@
 """Multi-agent Q-learning base implementation using NumPy."""
 
+from __future__ import annotations
+
 import math
 import random
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+NO_ACTION_MASKS_ACTION_SIZE_THRESHOLD = 100
+ACTION_MASKS_NO_DETERMINISTIC_ACTION_SIZE_THRESHOLD = 10
+ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_THRESHOLD = 250
 
 
 class MultiAgentQLearningNumpy:
@@ -32,6 +40,8 @@ class MultiAgentQLearningNumpy:
         Minimum exploration rate.
     q_table : List[float]
         Q-table for the agents.
+    _rng : np.random.Generator
+        Random number generator for reproducibility.
     """
 
     num_agents: int
@@ -43,6 +53,7 @@ class MultiAgentQLearningNumpy:
     exploration_decay: float
     min_exploration_rate: float
     q_table: NDArray[np.float64]
+    _rng: np.random.Generator
 
     def __init__(
         self,
@@ -54,6 +65,7 @@ class MultiAgentQLearningNumpy:
         exploration_rate: float = 1.0,
         exploration_decay: float = 0.999,
         min_exploration_rate: float = 0.01,
+        seed: int | None = None,
     ) -> None:
         """
         Initialize the MultiAgentQLearning class.
@@ -76,6 +88,8 @@ class MultiAgentQLearningNumpy:
             Decay rate for exploration rate, by default 0.995.
         min_exploration_rate : float, optional
             Minimum exploration rate, by default 0.01.
+        seed : int, optional
+            Random seed for reproducibility, by default None.
         """
         self.num_agents = num_agents
         self.state_size = state_size
@@ -86,6 +100,7 @@ class MultiAgentQLearningNumpy:
         self.exploration_decay = exploration_decay
         self.min_exploration_rate = min_exploration_rate
         self.q_table = np.zeros((state_size, action_size))
+        self._rng = np.random.default_rng(seed)
 
     def get_q_value(self, state: int, action: int) -> float:
         """
@@ -203,11 +218,12 @@ class MultiAgentQLearningNumpy:
         """
         np.save(filename, self.q_table)
 
-    def choose_action(
+    def choose_action(  # noqa: C901 PLR0912
         self,
         state: int,
+        *,
         deterministic: bool = False,
-        action_mask: Optional[NDArray[np.int32]] = None,
+        action_mask: NDArray[np.int32] | None = None,
     ) -> int:
         """
         Choose an action based on the current state.
@@ -229,7 +245,7 @@ class MultiAgentQLearningNumpy:
         if action_mask is None:
             if not deterministic and random.random() < self.exploration_rate:
                 return random.randint(0, self.action_size - 1)
-            if self.action_size > 100:
+            if self.action_size > NO_ACTION_MASKS_ACTION_SIZE_THRESHOLD:
                 max_val = np.max(self.q_table[state])
                 available_actions = np.where(self.q_table[state] == max_val)[0]
             else:
@@ -248,14 +264,14 @@ class MultiAgentQLearningNumpy:
         )
 
         if not deterministic and random.random() < self.exploration_rate:
-            if self.action_size > 10:
+            if self.action_size > ACTION_MASKS_NO_DETERMINISTIC_ACTION_SIZE_THRESHOLD:
                 available_actions = np.where(action_mask == 1)[0]
             else:
                 available_actions = []
                 for i, val in enumerate(action_mask):
                     if val:
                         available_actions.append(i)
-        elif self.action_size > 250:
+        elif self.action_size > ACTION_MASKS_DETERMINISTIC_ACTION_SIZE_THRESHOLD:
             masked_q_values = np.where(action_mask, self.q_table[state], -np.inf)
             max_val = np.max(masked_q_values)
             available_actions = np.where(masked_q_values == max_val)[0]
@@ -272,14 +288,18 @@ class MultiAgentQLearningNumpy:
 
         return random.choice(available_actions) if len(available_actions) > 0 else -1
 
-    def choose_action_0(
+    def choose_action_semi_vectorized(  # noqa: C901 PLR0912
         self,
         state: int,
+        *,
         deterministic: bool = False,
-        action_mask: Optional[NDArray[np.int32]] = None,
+        action_mask: NDArray[np.int32] | None = None,
     ) -> int:
         """
         Choose an action based on the current state.
+
+        This method is a semi-vectorized version that handles action selection
+        with or without an action mask. It uses NumPy operations for efficiency.
 
         Parameters
         ----------
@@ -331,14 +351,18 @@ class MultiAgentQLearningNumpy:
 
         return random.choice(available_actions) if len(available_actions) > 0 else -1
 
-    def choose_action_1(
+    def choose_action_fully_vectorized(
         self,
         state: int,
+        *,
         deterministic: bool = False,
-        action_mask: Optional[NDArray[np.int32]] = None,
+        action_mask: NDArray[np.int32] | None = None,
     ) -> int:
         """
         Choose an action based on the current state.
+
+        This method is a fully vectorized version that handles action selection
+        with or without an action mask. It uses NumPy operations for efficiency.
 
         Parameters
         ----------
@@ -376,11 +400,12 @@ class MultiAgentQLearningNumpy:
 
         return random.choice(available_actions) if len(available_actions) > 0 else -1
 
-    def choose_actions(  # pylint: disable=dangerous-default-value
+    def choose_actions(
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
+        action_masks: NDArray[np.int32] | None = None,
     ) -> NDArray[np.int32]:
         """
         Choose actions for all agents based on the current states.
@@ -400,55 +425,111 @@ class MultiAgentQLearningNumpy:
             Actions chosen for all agents.
         """
         if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states])
+            return np.array(
+                [self.choose_action(state, deterministic=deterministic) for state in states]
+            )
 
         return np.array(
             [
-                self.choose_action(state, deterministic, action_mask)
+                self.choose_action(state, deterministic=deterministic, action_mask=action_mask)
                 for state, action_mask in zip(states, action_masks)
             ]
         )
 
-    def choose_actions_0(  # pylint: disable=dangerous-default-value
+    def choose_actions_semi_vectorized(
         self,
         states: NDArray[np.int32],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
-    ) -> NDArray[np.int32]:
-        if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states])
-
-        return np.array(
-            [
-                self.choose_action_0(state, deterministic, action_mask)
-                for state, action_mask in zip(states, action_masks)
-            ]
-        )
-
-    def choose_actions_1(  # pylint: disable=dangerous-default-value
-        self,
-        states: NDArray[np.int32],
-        deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
-    ) -> NDArray[np.int32]:
-        if action_masks is None:
-            return np.array([self.choose_action(state, deterministic) for state in states])
-
-        return np.array(
-            [
-                self.choose_action_1(state, deterministic, action_mask)
-                for state, action_mask in zip(states, action_masks)
-            ]
-        )
-
-    def choose_actions_2(  # pylint: disable=dangerous-default-value
-        self,
-        states: NDArray[np.int32],
-        deterministic: bool = False,
-        action_masks: Optional[NDArray[np.int32]] = None,
+        action_masks: NDArray[np.int32] | None = None,
     ) -> NDArray[np.int32]:
         """
         Choose actions for all agents based on the current states.
+
+        This method is an iterative version that calls the `choose_action` semi-vectorized method
+        for each state and action mask pair.
+
+        Parameters
+        ----------
+        states : NDArray[np.int32]
+            Current states of all agents.
+        deterministic : bool, optional
+            Whether to choose the action deterministically, by default False.
+        action_masks : NDArray[np.int32] | None, optional
+            Masks for valid actions, by default None.
+
+        Returns
+        -------
+        NDArray[np.int32]
+            Actions chosen for all agents.
+        """
+        if action_masks is None:
+            return np.array(
+                [self.choose_action(state, deterministic=deterministic) for state in states]
+            )
+
+        return np.array(
+            [
+                self.choose_action_semi_vectorized(
+                    state, deterministic=deterministic, action_mask=action_mask
+                )
+                for state, action_mask in zip(states, action_masks)
+            ]
+        )
+
+    def choose_actions_iter_vectorized(
+        self,
+        states: NDArray[np.int32],
+        *,
+        deterministic: bool = False,
+        action_masks: NDArray[np.int32] | None = None,
+    ) -> NDArray[np.int32]:
+        """
+        Choose actions for all agents based on the current states.
+
+        This method is an iterative version that calls the `choose_action` fully vectorized method
+        for each state and action mask pair.
+
+        Parameters
+        ----------
+        states : NDArray[np.int32]
+            Current states of all agents.
+        deterministic : bool, optional
+            Whether to choose the action deterministically, by default False.
+        action_masks : NDArray[np.int32] | None, optional
+            Masks for valid actions, by default None.
+
+        Returns
+        -------
+        NDArray[np.int32]
+            Actions chosen for all agents.
+        """
+        if action_masks is None:
+            return np.array(
+                [self.choose_action(state, deterministic=deterministic) for state in states]
+            )
+
+        return np.array(
+            [
+                self.choose_action_fully_vectorized(
+                    state, deterministic=deterministic, action_mask=action_mask
+                )
+                for state, action_mask in zip(states, action_masks)
+            ]
+        )
+
+    def choose_actions_fully_vectorized(
+        self,
+        states: NDArray[np.int32],
+        *,
+        deterministic: bool = False,
+        action_masks: NDArray[np.int32] | None = None,
+    ) -> NDArray[np.int32]:
+        """
+        Choose actions for all agents based on the current states.
+
+        This method is a fully vectorized version that handles action selection
+        with or without an action mask. It uses NumPy operations for efficiency.
 
         Parameters
         ----------
@@ -495,11 +576,11 @@ class MultiAgentQLearningNumpy:
                 )
             return best_actions_per_state
 
-        explore_flags = np.random.rand(states.size) < self.exploration_rate
+        explore_flags = self._rng.random(states.size) < self.exploration_rate
 
         # If no mask is provided, allow all actions
         if action_masks is None:
-            exploratory_actions = np.random.randint(self.action_size, size=states.size)
+            exploratory_actions = self._rng.integers(self.action_size, size=states.size)
             max_q_values: NDArray[np.float64] = np.max(self.q_table[states], axis=1, keepdims=True)
             best_actions_per_state = np.array(
                 [

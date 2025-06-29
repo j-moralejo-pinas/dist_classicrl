@@ -1,8 +1,9 @@
 """Multi-agent Q-learning  implementation using lists."""
 
+from __future__ import annotations
+
 import math
 import random
-from typing import List, Optional
 
 import numpy as np
 
@@ -41,7 +42,7 @@ class MultiAgentQLearningLists:
     exploration_rate: float
     exploration_decay: float
     min_exploration_rate: float
-    q_table: List[float]
+    q_table: list[float]
 
     def __init__(
         self,
@@ -104,7 +105,7 @@ class MultiAgentQLearningLists:
         """
         return self.q_table[state * self.action_size + action]
 
-    def get_q_values(self, states: List[int], actions: List[int]) -> List[float]:
+    def get_q_values(self, states: list[int], actions: list[int]) -> list[float]:
         """
         Get the Q-values for a given list of state-action pairs.
 
@@ -122,7 +123,7 @@ class MultiAgentQLearningLists:
         """
         return [self.get_q_value(state, action) for state, action in zip(states, actions)]
 
-    def get_state_q_values(self, state: int) -> List[float]:
+    def get_state_q_values(self, state: int) -> list[float]:
         """
         Get the Q-values for a given state.
 
@@ -140,8 +141,8 @@ class MultiAgentQLearningLists:
 
     def get_states_q_values(
         self,
-        states: List[int],
-    ) -> List[List[float]]:
+        states: list[int],
+    ) -> list[list[float]]:
         """
         Get the Q-values for a given list of states.
 
@@ -187,7 +188,7 @@ class MultiAgentQLearningLists:
         """
         self.q_table[state * self.action_size + action] += value
 
-    def add_q_values(self, states: List[int], actions: List[int], values: List[float]) -> None:
+    def add_q_values(self, states: list[int], actions: list[int], values: list[float]) -> None:
         """
         Add Q-values for a given list of state-action pairs.
 
@@ -214,8 +215,8 @@ class MultiAgentQLearningLists:
         """
         np.save(filename, np.array(self.q_table))
 
-    def choose_action(
-        self, state: int, deterministic: bool = False, action_mask: Optional[List[int]] = None
+    def choose_action(  # noqa: C901 PLR0912
+        self, state: int, *, deterministic: bool = False, action_mask: list[int] | None = None
     ) -> int:
         """
         Choose an action based on the current state.
@@ -271,10 +272,11 @@ class MultiAgentQLearningLists:
 
     def choose_actions(
         self,
-        states: List[int],
+        states: list[int],
+        *,
         deterministic: bool = False,
-        action_masks: Optional[List[List[int]]] = None,
-    ) -> List[int]:
+        action_masks: list[list[int]] | None = None,
+    ) -> list[int]:
         """
         Choose actions for all agents based on the current states.
 
@@ -297,13 +299,13 @@ class MultiAgentQLearningLists:
                 "States list and action masks list should have the same length."
             )
             return [
-                self.choose_action(state, deterministic, action_mask)
+                self.choose_action(state, deterministic=deterministic, action_mask=action_mask)
                 for state, action_mask in zip(states, action_masks)
             ]
-        return [self.choose_action(state, deterministic) for state in states]
+        return [self.choose_action(state, deterministic=deterministic) for state in states]
 
     def learn(
-        self, states: List[int], actions: List[int], rewards: List[float], next_states: List[int]
+        self, states: list[int], actions: list[int], rewards: list[float], next_states: list[int]
     ) -> None:
         """
         Update Q-table based on the agents' experiences.

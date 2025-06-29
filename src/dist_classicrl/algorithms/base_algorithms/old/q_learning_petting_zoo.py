@@ -1,12 +1,15 @@
 """This module contains the implementation of multi-agent Q-learning for the Repsol project."""
 
-from typing import Any, Dict, Optional, Tuple
+from __future__ import annotations
 
-import numpy as np
-from numpy.typing import NDArray
-from pettingzoo import ParallelEnv
+from typing import TYPE_CHECKING, Any
 
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import OptimalQLearningBase
+
+if TYPE_CHECKING:
+    import numpy as np
+    from numpy.typing import NDArray
+    from pettingzoo import ParallelEnv
 
 
 class SingleEnvQLearning(OptimalQLearningBase):
@@ -51,8 +54,8 @@ class SingleEnvQLearning(OptimalQLearningBase):
         steps: int,
         val_env: ParallelEnv,
         val_every_n_steps: int,
-        val_steps: Optional[int],
-        val_episodes: Optional[int],
+        val_steps: int | None,
+        val_episodes: int | None,
     ) -> None:
         """
         Train the agent in the environment for a given number of steps.
@@ -70,9 +73,9 @@ class SingleEnvQLearning(OptimalQLearningBase):
         eval_every_n_steps : int
             Evaluate the agent every n steps.
         """
-        assert (val_steps is None) ^ (
-            val_episodes is None
-        ), "Either val_steps or val_episodes should be provided."
+        assert (val_steps is None) ^ (val_episodes is None), (
+            "Either val_steps or val_episodes should be provided."
+        )
         reward_history = []
         agent_reward_history = {}
         val_reward_history = []
@@ -115,13 +118,12 @@ class SingleEnvQLearning(OptimalQLearningBase):
                     if agent not in val_agent_reward_history:
                         val_agent_reward_history[agent] = []
                     val_agent_reward_history[agent].append(reward)
-                print(f"Step {step + 1}, Eval total rewards: {val_total_rewards}")
 
     def evaluate_steps(
         self,
         env: ParallelEnv,
         steps: int,
-    ) -> Tuple[float, Dict[Any, float]]:
+    ) -> tuple[float, dict[Any, float]]:
         """
         Evaluate the agent in the environment for a given number of steps.
 
@@ -155,7 +157,7 @@ class SingleEnvQLearning(OptimalQLearningBase):
         self,
         env: ParallelEnv,
         episodes: int,
-    ) -> Tuple[float, Dict[Any, float]]:
+    ) -> tuple[float, dict[Any, float]]:
         """
         Evaluate the agent in the environment for a given number of episodes.
 

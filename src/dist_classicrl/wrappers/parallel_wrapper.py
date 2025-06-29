@@ -1,6 +1,13 @@
-"""This module provides a wrapper for PettingZoo environments."""
+"""Wrapper for PettingZoo environments."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 # Dummy PettingZoo environment for testing.
@@ -12,7 +19,7 @@ class DummyPettingZooEnv:
     and structured observations/actions containing 'observation' and 'action_mask' keys.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the dummy environment with two agents."""
         # Fixed agent order.
         self.agents = ["agent_0", "agent_1"]
@@ -28,7 +35,7 @@ class DummyPettingZooEnv:
             "agent_1": {"action": None, "action_mask": None},
         }
 
-    def reset(self, **kwargs):
+    def reset(self, **kwargs) -> dict[str, dict[str, NDArray[np.int32]]]:
         """
         Reset the environment and return initial observations.
 
@@ -77,10 +84,7 @@ class DummyPettingZooEnv:
         for agent in self.agents:
             action = actions[agent]
             # Compute a new observation based on the action value.
-            if agent == "agent_0":
-                new_obs_val = action["action"] + 0
-            else:
-                new_obs_val = action["action"] + 10
+            new_obs_val = action["action"] + 0 if agent == "agent_0" else action["action"] + 10
             new_obs[agent] = {
                 "observation": np.array([new_obs_val]),
                 "action_mask": action["action_mask"],
@@ -92,7 +96,7 @@ class DummyPettingZooEnv:
             infos[agent] = {"dummy_info": True}
         return new_obs, rewards, terminated, truncated, infos
 
-    def render(self, mode="human"):
+    def render(self, mode="human") -> None:
         """
         Render the environment.
 
@@ -102,12 +106,13 @@ class DummyPettingZooEnv:
             Rendering mode (default: "human").
         """
         # Dummy render simply prints a message.
-        print("Rendering DummyPettingZooEnv.")
 
 
 # The wrapper preserving structured observations/actions.
 class PettingZooVectorWrapper:
     """
+    Wrapper for PettingZoo environments to provide a Gymnasium-like interface.
+
     A wrapper that converts a PettingZoo parallel environment's dict-based API
     into an interface similar to Gymnasium's sync vector environments while preserving
     the composite structure of observations and actions.
@@ -118,7 +123,7 @@ class PettingZooVectorWrapper:
     - The step method returns separate terminated and truncated arrays.
     """
 
-    def __init__(self, env):
+    def __init__(self, env) -> None:
         """
         Initialize the PettingZooVectorWrapper.
 
@@ -259,7 +264,7 @@ class PettingZooVectorWrapper:
             return {k: self._stack_structure([d[k] for d in data_list]) for k in data_list[0]}
         return np.array(data_list)
 
-    def _unstack_structure(self, data, num_agents):
+    def _unstack_structure(self, data, num_agents: int):
         """
         Inverse of _stack_structure: given structured data with a leading agent dimension.
 
@@ -286,7 +291,7 @@ class PettingZooVectorWrapper:
 
 
 # Test function for the wrapper.
-def test_pettingzoo_vector_wrapper():
+def test_pettingzoo_vector_wrapper() -> None:
     """
     Test function for the PettingZooVectorWrapper.
 
@@ -298,16 +303,13 @@ def test_pettingzoo_vector_wrapper():
     wrapped_env = PettingZooVectorWrapper(dummy_env)
 
     # Test reset.
-    print("=== Reset ===")
     reset_obs = wrapped_env.reset()
-    print("Reset observation (structured):")
-    print(reset_obs)
 
     # Check structure:
     # It should be a dict with keys "observation" and "action_mask",
     # and each value should be a NumPy array with shape (num_agents, ...).
-    for key, value in reset_obs.items():  # type: ignore
-        print(f"Key: {key}, shape: {np.array(value).shape}")
+    for _key, _value in reset_obs.items():  # type: ignore[attr-access]
+        pass
 
     # Create a vectorized (structured) action.
     # For example, we assume the action structure is a dict with:
@@ -319,22 +321,12 @@ def test_pettingzoo_vector_wrapper():
     }
 
     # Test step.
-    print("\n=== Step ===")
     obs, rewards, terminated, truncated, infos = wrapped_env.step(vectorized_actions)
-    print("Step observation (structured):")
-    print(obs)
-    print("Rewards:", rewards)
-    print("Terminated:", terminated)
-    print("Truncated:", truncated)
-    print("Infos:", infos)
 
     # The dummy env's step adds 0 for agent_0 and 10 for agent_1 to the action value.
     # Therefore, we expect:
     #  - For agent_0: observation becomes [5]
     #  - For agent_1: observation becomes [15 + 10] = [25]
-    print("\n=== Expected Results ===")
-    print("Expected agent_0 observation: [5]")
-    print("Expected agent_1 observation: [25]")
 
 
 if __name__ == "__main__":

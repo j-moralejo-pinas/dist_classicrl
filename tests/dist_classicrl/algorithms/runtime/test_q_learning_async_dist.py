@@ -5,8 +5,10 @@ This module contains comprehensive tests for all methods and functionality
 of the DistAsyncQLearning class from the q_learning_async_dist module.
 
 Note: Some tests require MPI and should be run with mpirun.
-For MPI tests, use: mpirun -n 3 python -m pytest test_q_learning_async_dist.py::TestDistAsyncQLearningMPI
-For non-MPI tests, use: pytest test_q_learning_async_dist.py::TestDistAsyncQLearning
+For MPI tests, use:
+mpirun -n 3 python -m pytest test_q_learning_async_dist.py::TestDistAsyncQLearningMPI
+For non-MPI tests, use:
+pytest test_q_learning_async_dist.py::TestDistAsyncQLearning
 """
 
 import queue
@@ -15,10 +17,19 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
+    MASTER_RANK,
+    NUM_NODES,
+    RANK,
+    comm,
+)
+from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
+    OptimalQLearningBase,
+)
 from tests.utils.mock_env import MockEnvironment
 
 try:
-    from mpi4py import MPI
+    from mpi4py import MPI  # noqa: F401
 
     MPI_AVAILABLE = True
 except ImportError:
@@ -30,7 +41,7 @@ from dist_classicrl.algorithms.runtime.q_learning_async_dist import DistAsyncQLe
 class TestDistAsyncQLearning:
     """Test class for DistAsyncQLearning (non-MPI tests)."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures before each test method."""
         self.state_size = 10
         self.action_size = 3
@@ -44,7 +55,7 @@ class TestDistAsyncQLearning:
             min_exploration_rate=0.01,
         )
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test proper initialization of the DistAsyncQLearning class."""
         assert self.agent.state_size == 10
         assert self.agent.action_size == 3
@@ -56,12 +67,8 @@ class TestDistAsyncQLearning:
         assert self.agent.q_table.shape == (10, 3)
         assert np.all(self.agent.q_table == 0)
 
-    def test_inheritance_from_optimal_q_learning_base(self):
+    def test_inheritance_from_optimal_q_learning_base(self) -> None:
         """Test that DistAsyncQLearning properly inherits from OptimalQLearningBase."""
-        from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
-            OptimalQLearningBase,
-        )
-
         assert isinstance(self.agent, OptimalQLearningBase)
 
         # Test that inherited methods are available
@@ -70,22 +77,22 @@ class TestDistAsyncQLearning:
         assert hasattr(self.agent, "get_q_value")
         assert hasattr(self.agent, "set_q_value")
 
-    def test_update_q_table_method_exists(self):
+    def test_update_q_table_method_exists(self) -> None:
         """Test that update_q_table method is available."""
         assert hasattr(self.agent, "update_q_table")
         assert callable(self.agent.update_q_table)
 
-    def test_communicate_master_method_exists(self):
+    def test_communicate_master_method_exists(self) -> None:
         """Test that communicate_master method is available."""
         assert hasattr(self.agent, "communicate_master")
         assert callable(self.agent.communicate_master)
 
-    def test_run_environment_method_exists(self):
+    def test_run_environment_method_exists(self) -> None:
         """Test that run_environment method is available."""
         assert hasattr(self.agent, "run_environment")
         assert callable(self.agent.run_environment)
 
-    def test_evaluate_steps_simple_env(self):
+    def test_evaluate_steps_simple_env(self) -> None:
         """Test evaluation with steps on a simple environment."""
         env = MockEnvironment(num_envs=2, return_dict=False)
 
@@ -95,7 +102,7 @@ class TestDistAsyncQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_steps_dict_observation_env(self):
+    def test_evaluate_steps_dict_observation_env(self) -> None:
         """Test evaluation with steps on a dict observation environment."""
         env = MockEnvironment(num_envs=2, return_dict=True)
 
@@ -105,7 +112,7 @@ class TestDistAsyncQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_episodes_simple_env(self):
+    def test_evaluate_episodes_simple_env(self) -> None:
         """Test evaluation with episodes on a simple environment."""
         env = MockEnvironment(num_envs=2, return_dict=False)
 
@@ -115,7 +122,7 @@ class TestDistAsyncQLearning:
             assert isinstance(total_rewards, float)
             assert isinstance(reward_history, list)
 
-    def test_evaluate_episodes_dict_observation_env(self):
+    def test_evaluate_episodes_dict_observation_env(self) -> None:
         """Test evaluation with episodes on a dict observation environment."""
         env = MockEnvironment(num_envs=2, return_dict=True)
 
@@ -126,7 +133,7 @@ class TestDistAsyncQLearning:
             assert isinstance(reward_history, list)
 
     @patch("queue.Queue")
-    def test_update_q_table_with_mock_queue(self, mock_queue_class):
+    def test_update_q_table_with_mock_queue(self, mock_queue_class) -> None:
         """Test update_q_table method with mocked queue."""
         # Create a mock queue instance
         mock_queue = MagicMock()
@@ -141,18 +148,18 @@ class TestDistAsyncQLearning:
 
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(self.agent, "learn"):
-            with patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])):
-                with patch("builtins.print"):
-                    # This should exit quickly due to our mocked None
-                    self.agent.update_q_table(
-                        val_env=val_env, val_every_n_steps=5, val_steps=2, val_episodes=None
-                    )
+        with patch.object(self.agent, "learn"), patch.object(
+            self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
+        ), patch("builtins.print"):
+            # This should exit quickly due to our mocked None
+            self.agent.update_q_table(
+                val_env=val_env, val_every_n_steps=5, val_steps=2, val_episodes=None
+            )
 
-    def test_train_method_validation_params(self):
+    def test_train_method_validation_params(self) -> None:
         """Test that train method validates parameters correctly."""
-        env = MockEnvironment(num_envs=1, return_dict=False)
-        val_env = MockEnvironment(num_envs=1, return_dict=False)
+        MockEnvironment(num_envs=1, return_dict=False)
+        MockEnvironment(num_envs=1, return_dict=False)
 
         # This test just checks that the method exists and can handle validation
         # without actually running MPI code
@@ -164,7 +171,7 @@ class TestDistAsyncQLearning:
 class TestDistAsyncQLearningMPI:
     """Test class for DistAsyncQLearning with MPI functionality."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures before each test method."""
         self.state_size = 10
         self.action_size = 3
@@ -178,15 +185,8 @@ class TestDistAsyncQLearningMPI:
             min_exploration_rate=0.01,
         )
 
-    def test_mpi_constants(self):
+    def test_mpi_constants(self) -> None:
         """Test that MPI constants are properly set."""
-        from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-            MASTER_RANK,
-            NUM_NODES,
-            RANK,
-            comm,
-        )
-
         assert comm is not None
         assert isinstance(RANK, int)
         assert isinstance(NUM_NODES, int)
@@ -196,13 +196,8 @@ class TestDistAsyncQLearningMPI:
 
     @patch("threading.Thread")
     @patch("queue.Queue")
-    def test_train_master_node_setup(self, mock_queue, mock_thread):
+    def test_train_master_node_setup(self, mock_queue, mock_thread) -> None:
         """Test training setup for master node."""
-        from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-            MASTER_RANK,
-            RANK,
-        )
-
         if RANK == MASTER_RANK:
             env = MockEnvironment(num_envs=1, return_dict=False)
             val_env = MockEnvironment(num_envs=1, return_dict=False)
@@ -231,13 +226,8 @@ class TestDistAsyncQLearningMPI:
                 mock_thread_instance.start.assert_called_once()
                 mock_thread_instance.join.assert_called_once()
 
-    def test_train_worker_node_setup(self):
+    def test_train_worker_node_setup(self) -> None:
         """Test training setup for worker nodes."""
-        from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-            MASTER_RANK,
-            RANK,
-        )
-
         if RANK != MASTER_RANK:
             env = MockEnvironment(num_envs=1, return_dict=False)
             val_env = MockEnvironment(num_envs=1, return_dict=False)
@@ -254,13 +244,8 @@ class TestDistAsyncQLearningMPI:
                 )
 
     @patch("dist_classicrl.algorithms.runtime.q_learning_async_dist.comm")
-    def test_communicate_master_mock(self, mock_comm):
+    def test_communicate_master_mock(self, mock_comm) -> None:
         """Test communicate_master method with mocked MPI communication."""
-        from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-            MASTER_RANK,
-            RANK,
-        )
-
         if RANK == MASTER_RANK:
             # Mock MPI communication
             mock_request = MagicMock()
@@ -286,13 +271,8 @@ class TestDistAsyncQLearningMPI:
                 assert isinstance(reward_history, list)
 
     @patch("dist_classicrl.algorithms.runtime.q_learning_async_dist.comm")
-    def test_run_environment_mock(self, mock_comm):
+    def test_run_environment_mock(self, mock_comm) -> None:
         """Test run_environment method with mocked MPI communication."""
-        from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-            MASTER_RANK,
-            RANK,
-        )
-
         if RANK != MASTER_RANK:
             env = MockEnvironment(num_envs=2, return_dict=False)
 
@@ -307,7 +287,7 @@ class TestDistAsyncQLearningMPI:
             mock_comm.send = MagicMock()
 
             # Mock the status to change tags to trigger loop exit
-            def probe_side_effect(*args, **kwargs):
+            def probe_side_effect(*args, **kwargs) -> None:
                 if mock_comm.recv.call_count >= 2:
                     mock_status.tag = 0  # Stop tag
                 kwargs["status"].tag = mock_status.tag
@@ -321,21 +301,14 @@ class TestDistAsyncQLearningMPI:
 
 
 # Standalone MPI test script for integration testing
-def run_mpi_integration_test():
+def run_mpi_integration_test() -> None:
     """
     Integration test that can be run with mpirun.
-    Usage: mpirun -n 3 python test_q_learning_async_dist.py
+
+    Usage: mpirun -n 3 python test_q_learning_async_dist.py.
     """
     if not MPI_AVAILABLE:
-        print("MPI not available, skipping integration test")
         return
-
-    from dist_classicrl.algorithms.runtime.q_learning_async_dist import (
-        NUM_NODES,
-        RANK,
-    )
-
-    print(f"Running on rank {RANK} of {NUM_NODES}")
 
     # Simple integration test
     agent = DistAsyncQLearning(
@@ -349,20 +322,15 @@ def run_mpi_integration_test():
     env = MockEnvironment(num_envs=2, return_dict=False)
     val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-    try:
-        agent.train(
-            env=env,
-            steps=10,
-            val_env=val_env,
-            val_every_n_steps=5,
-            val_steps=3,
-            val_episodes=None,
-            batch_size=2,
-        )
-        print(f"Rank {RANK}: Training completed successfully")
-    except Exception as e:
-        print(f"Rank {RANK}: Error during training: {e}")
-        raise
+    agent.train(
+        env=env,
+        steps=10,
+        val_env=val_env,
+        val_every_n_steps=5,
+        val_steps=3,
+        val_episodes=None,
+        batch_size=2,
+    )
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+"""Mock environment for testing purposes."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -10,7 +12,7 @@ from dist_classicrl.environments.custom_env import DistClassicRLEnv
 class MockEnvironment(DistClassicRLEnv):
     """Mock environment for testing purposes."""
 
-    def __init__(self, num_envs=1, return_dict=False):
+    def __init__(self, num_envs: int = 1, *, return_dict: bool = False) -> None:
         super().__init__()
         self.num_envs = num_envs
         self.return_dict = return_dict
@@ -18,7 +20,7 @@ class MockEnvironment(DistClassicRLEnv):
         self._max_steps = 10
 
     def step(
-        self, actions: np.typing.NDArray[np.int32]
+        self,
     ) -> tuple[
         np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]],
         np.typing.NDArray[np.float32],
@@ -45,10 +47,9 @@ class MockEnvironment(DistClassicRLEnv):
         return next_states, rewards, terminated, truncated, infos
 
     def reset(
-        self, seed: int | None = None, options: dict | None = None
+        self,
     ) -> tuple[
-        np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]],
-        list[dict[str, Any]],
+        np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]], list[dict[str, Any]]
     ]:
         """Mock reset function."""
         self._step_count = 0

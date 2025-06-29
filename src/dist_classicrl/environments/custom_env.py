@@ -1,11 +1,15 @@
 """Custom environment interface for distributed classic RL environments."""
 
+from __future__ import annotations
+
 import abc
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import gymnasium as gym
-import numpy as np
-from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    import numpy as np
+    from numpy.typing import NDArray
 
 
 class DistClassicRLEnv(abc.ABC, gym.Env):
@@ -18,12 +22,13 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
     Attributes
     ----------
     num_agents : int
-        Number of agents in the environment. This is an abstract attribute that must be defined in subclasses
+        Number of agents in the environment.
+        This is an abstract attribute that must be defined in subclasses
     """
 
     num_agents: int
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """
         Initialize the environment.
 
@@ -35,12 +40,14 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def step(self, actions: NDArray[np.int32]) -> Tuple[
-        Union[Dict[str, NDArray[np.int32]], NDArray[np.int32]],
+    def step(
+        self, actions: NDArray[np.int32]
+    ) -> tuple[
+        dict[str, NDArray[np.int32]] | NDArray[np.int32],
         NDArray[np.float32],
         NDArray[np.bool],
         NDArray[np.bool],
-        List[Dict],
+        list[dict],
     ]:
         """
         Execute actions for all agents in the environment.
@@ -67,9 +74,11 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         """
 
     @abc.abstractmethod
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[
-        Union[Dict[str, NDArray[np.int32]], NDArray[np.int32]],
-        List[Dict],
+    def reset(
+        self, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[
+        dict[str, NDArray[np.int32]] | NDArray[np.int32],
+        list[dict],
     ]:
         """
         Reset the environment to initial state.
@@ -111,7 +120,7 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         """
 
     @abc.abstractmethod
-    def get_env_info(self) -> Dict[str, Any]:
+    def get_env_info(self) -> dict[str, Any]:
         """
         Get environment information.
 
@@ -122,7 +131,7 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
         """
 
     @abc.abstractmethod
-    def get_agent_info(self) -> Dict[str, Any]:
+    def get_agent_info(self) -> dict[str, Any]:
         """
         Get agent information.
 

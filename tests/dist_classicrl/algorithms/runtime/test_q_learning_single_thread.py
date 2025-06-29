@@ -11,6 +11,9 @@ import numpy as np
 import pytest
 from gymnasium.vector import SyncVectorEnv
 
+from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
+    OptimalQLearningBase,
+)
 from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
     SingleThreadQLearning,
 )
@@ -52,19 +55,20 @@ class TestSingleThreadQLearning:
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
         # Mock the choose_actions and learn methods to avoid randomness
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])):
-            with patch.object(self.agent, "learn") as mock_learn:
-                self.agent.train(
-                    env=env,
-                    steps=5,
-                    val_env=val_env,
-                    val_every_n_steps=3,
-                    val_steps=2,
-                    val_episodes=None,
-                )
+        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
+            self.agent, "learn"
+        ) as mock_learn:
+            self.agent.train(
+                env=env,
+                steps=5,
+                val_env=val_env,
+                val_every_n_steps=3,
+                val_steps=2,
+                val_episodes=None,
+            )
 
-                # Verify learn was called
-                assert mock_learn.called
+            # Verify learn was called
+            assert mock_learn.called
 
     def test_train_with_dict_observation_env(self) -> None:
         """Test training with an environment that returns dict observations."""
@@ -72,35 +76,37 @@ class TestSingleThreadQLearning:
         val_env = MockEnvironment(num_envs=1, return_dict=True)
 
         # Mock the choose_actions and learn methods
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])):
-            with patch.object(self.agent, "learn") as mock_learn:
-                self.agent.train(
-                    env=env,
-                    steps=5,
-                    val_env=val_env,
-                    val_every_n_steps=3,
-                    val_steps=2,
-                    val_episodes=None,
-                )
+        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
+            self.agent, "learn"
+        ) as mock_learn:
+            self.agent.train(
+                env=env,
+                steps=5,
+                val_env=val_env,
+                val_every_n_steps=3,
+                val_steps=2,
+                val_episodes=None,
+            )
 
-                # Verify learn was called with action_mask
-                mock_learn.assert_called()
+            # Verify learn was called with action_mask
+            mock_learn.assert_called()
 
     def test_train_with_validation_episodes(self) -> None:
         """Test training with validation by episodes instead of steps."""
         env = MockEnvironment(num_envs=1, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])):
-            with patch.object(self.agent, "learn"):
-                self.agent.train(
-                    env=env,
-                    steps=5,
-                    val_env=val_env,
-                    val_every_n_steps=3,
-                    val_steps=None,
-                    val_episodes=2,
-                )
+        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
+            self.agent, "learn"
+        ):
+            self.agent.train(
+                env=env,
+                steps=5,
+                val_env=val_env,
+                val_every_n_steps=3,
+                val_steps=None,
+                val_episodes=2,
+            )
 
     def test_train_invalid_validation_params(self) -> None:
         """Test that training raises assertion error with invalid validation params."""
@@ -180,23 +186,20 @@ class TestSingleThreadQLearning:
 
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1, 2])):
-            with patch.object(self.agent, "learn"):
-                self.agent.train(
-                    env=mock_env,
-                    steps=5,
-                    val_env=val_env,
-                    val_every_n_steps=3,
-                    val_steps=2,
-                    val_episodes=None,
-                )
+        with patch.object(
+            self.agent, "choose_actions", return_value=np.array([0, 1, 2])
+        ), patch.object(self.agent, "learn"):
+            self.agent.train(
+                env=mock_env,
+                steps=5,
+                val_env=val_env,
+                val_every_n_steps=3,
+                val_steps=2,
+                val_episodes=None,
+            )
 
     def test_inheritance_from_optimal_q_learning_base(self) -> None:
         """Test that SingleThreadQLearning properly inherits from OptimalQLearningBase."""
-        from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
-            OptimalQLearningBase,
-        )
-
         assert isinstance(self.agent, OptimalQLearningBase)
 
         # Test that inherited methods are available
@@ -211,18 +214,17 @@ class TestSingleThreadQLearning:
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
         # Mock choose_actions to return deterministic actions
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
-            with patch.object(self.agent, "learn"):
-                # Capture print output to verify evaluation is happening
-                with patch("builtins.print") as mock_print:
-                    self.agent.train(
-                        env=env,
-                        steps=6,
-                        val_env=val_env,
-                        val_every_n_steps=3,
-                        val_steps=2,
-                        val_episodes=None,
-                    )
+        with patch.object(
+            self.agent, "choose_actions", return_value=np.array([0, 1])
+        ), patch.object(self.agent, "learn"), patch("builtins.print") as mock_print:
+            self.agent.train(
+                env=env,
+                steps=6,
+                val_env=val_env,
+                val_every_n_steps=3,
+                val_steps=2,
+                val_episodes=None,
+            )
 
-                    # Verify that evaluation print was called
-                    mock_print.assert_called()
+            # Verify that evaluation print was called
+            mock_print.assert_called()

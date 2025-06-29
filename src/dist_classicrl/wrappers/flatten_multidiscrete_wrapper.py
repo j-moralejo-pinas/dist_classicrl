@@ -1,17 +1,21 @@
-"""This module provides wrappers for flattening multi-discrete action and observation spaces."""
+"""Wrappers for flattening multi-discrete action and observation spaces."""
 
-from typing import Any, Dict, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import gymnasium
 import numpy as np
 from gymnasium import spaces
-from numpy.typing import NDArray
 
 from dist_classicrl.utils import (
     compute_radix,
     decode_to_multi_discrete,
     encode_multi_discrete,
 )
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
@@ -35,7 +39,7 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
     action_space: spaces.Discrete
     action_nvec: NDArray[np.int32]
 
-    def __init__(self, env):
+    def __init__(self, env: gymnasium.Env) -> None:
         """
         Initialize the FlattenMultiDiscreteActionsWrapper.
 
@@ -51,9 +55,9 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
         """
         super().__init__(env)
         action_space = env.action_space
-        assert isinstance(action_space, spaces.MultiDiscrete) or isinstance(
-            action_space, spaces.Discrete
-        ), f"Expected MultiDiscrete or Discrete action space, got {type(env.action_space)}."
+        assert isinstance(action_space, (spaces.MultiDiscrete, spaces.Discrete)), (
+            f"Expected MultiDiscrete or Discrete action space, got {type(env.action_space)}."
+        )
 
         assert isinstance(action_space, spaces.MultiDiscrete), (
             "Expected MultiDiscrete action space."
@@ -98,10 +102,10 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
     """
 
     observation_radix: NDArray[np.int32]
-    observation_space: Union[spaces.Discrete, spaces.Dict]
+    observation_space: spaces.Discrete | spaces.Dict
     observation_nvec: NDArray[np.int32]
 
-    def __init__(self, env) -> None:
+    def __init__(self, env: gymnasium.Env) -> None:
         """
         Initialize the FlattenMultiDiscreteObservationsWrapper.
 
@@ -130,16 +134,15 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
             self.observation_radix = compute_radix(observation_subspace.nvec)
             self.observation_nvec = observation_subspace.nvec
             self.observation_space = (
-                observation_space  # TODO: I should probably make a deep copy here
+                observation_space  # TODO(Javier): I should probably make a deep copy here
             )
             self.observation_space.spaces["observation"] = spaces.Discrete(
                 np.prod(observation_subspace.nvec)
             )
         else:
-            assert isinstance(observation_space, spaces.MultiDiscrete) or isinstance(
-                observation_space, spaces.Discrete
-            ), (
-                f"Expected MultiDiscrete or Discrete observation space, got {type(env.observation_space)}."
+            assert isinstance(observation_space, (spaces.MultiDiscrete, spaces.Discrete)), (
+                "Expected MultiDiscrete or Discrete observation space, "
+                f"got {type(env.observation_space)}."
             )
 
             assert isinstance(observation_space, spaces.MultiDiscrete), (
@@ -150,8 +153,8 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
             self.observation_space = spaces.Discrete(np.prod(observation_space.nvec))
 
     def observation(
-        self, observation: Union[NDArray[np.int32], Dict[str, Union[NDArray[np.int32], Any]]]
-    ) -> Union[int, Dict[str, Union[int, Any]]]:
+        self, observation: NDArray[np.int32] | dict[str, NDArray[np.int32] | Any]
+    ) -> int | dict[str, int | Any]:
         """
         Flatten multi-discrete observations into discrete format.
 

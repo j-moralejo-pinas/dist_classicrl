@@ -1,21 +1,29 @@
 """Multi-agent Q-learning trainer implementation using multiprocessing."""
 
-# TODO: Fix shared memory staying open after Ctrl+C
+# TODO(Javier): Fix shared memory staying open after Ctrl+C
+from __future__ import annotations
 
+import logging
 import multiprocessing as mp
 from multiprocessing import Value, connection, shared_memory
-from multiprocessing.sharedctypes import Synchronized
-from multiprocessing.synchronize import Lock
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
-from gymnasium.vector import VectorEnv
-from numpy.typing import NDArray
 
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
     OptimalQLearningBase,
 )
-from dist_classicrl.environments.custom_env import DistClassicRLEnv
+
+if TYPE_CHECKING:
+    from multiprocessing.sharedctypes import Synchronized
+    from multiprocessing.synchronize import Lock
+
+    from gymnasium.vector import VectorEnv
+    from numpy.typing import NDArray
+
+    from dist_classicrl.environments.custom_env import DistClassicRLEnv
+
+logger = logging.getLogger(__name__)
 
 
 class ParallelQLearning(OptimalQLearningBase):
@@ -59,7 +67,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
     sm_name: str = "q_table"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002 ANN003
         super().__init__(*args, **kwargs)
         self.sm = shared_memory.SharedMemory(
             name=self.sm_name, create=True, size=self.q_table.nbytes
@@ -71,6 +79,7 @@ class ParallelQLearning(OptimalQLearningBase):
     def update_explore_rate(self) -> None:
         """
         Update the exploration rate.
+
         This method overrides the base class method to ensure thread safety
         when updating the exploration rate in a multi-agent setting.
         """
@@ -82,12 +91,12 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def train(
         self,
-        envs: Union[Sequence[DistClassicRLEnv], Sequence[VectorEnv]],
+        envs: Sequence[DistClassicRLEnv] | Sequence[VectorEnv],
         steps: int,
-        val_env: Union[DistClassicRLEnv, VectorEnv],
+        val_env: DistClassicRLEnv | VectorEnv,
         val_every_n_steps: int,
-        val_steps: Optional[int],
-        val_episodes: Optional[int],
+        val_steps: int | None,
+        val_episodes: int | None,
     ) -> None:
         """
         Train the agent in the environment for a given number of steps.
@@ -163,20 +172,20 @@ class ParallelQLearning(OptimalQLearningBase):
 
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
-                print(f"Step {step * len(envs)}, Eval total rewards: {val_total_rewards}")
+                logger.debug("Step %d, Eval Total Rewards: %s", step * len(envs), val_total_rewards)
         finally:
             self.sm.close()
             self.sm.unlink()
 
     def run_steps(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         num_steps: int,
         rewards_queue: mp.Queue,
         sm_lock: Lock,
         exploration_rate_value: Synchronized,
-        curr_state_pipe: Optional[connection.Connection],
-        curr_state: Optional[Dict] = None,
+        curr_state_pipe: connection.Connection | None,
+        curr_state: dict | None = None,
     ) -> None:
         """
         Run a single environment with multiple agents for a given number of episodes.
@@ -203,10 +212,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
         if curr_state is None:
             states, infos = env.reset()
-            if isinstance(states, dict):
-                n_agents = len(states["observation"])
-            else:
-                n_agents = len(states)
+            n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
             agent_rewards = np.zeros(n_agents, dtype=np.float32)
         else:
             states = curr_state["states"]
@@ -257,9 +263,9 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def evaluate_steps(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         steps: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of steps.
 
@@ -276,10 +282,7 @@ class ParallelQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         for _ in range(steps):
@@ -302,9 +305,9 @@ class ParallelQLearning(OptimalQLearningBase):
 
     def evaluate_episodes(
         self,
-        env: Union[DistClassicRLEnv, VectorEnv],
+        env: DistClassicRLEnv | VectorEnv,
         episodes: int,
-    ) -> Tuple[float, List[float]]:
+    ) -> tuple[float, list[float]]:
         """
         Evaluate the agent in the environment for a given number of episodes.
 
@@ -321,10 +324,7 @@ class ParallelQLearning(OptimalQLearningBase):
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
-        if isinstance(states, dict):
-            n_agents = len(states["observation"])
-        else:
-            n_agents = len(states)
+        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         episode = 0
