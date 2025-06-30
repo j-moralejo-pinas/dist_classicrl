@@ -93,13 +93,13 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        val_env : Union[DistClassicRLEnv, VectorEnv]
+        val_env : DistClassicRLEnv | VectorEnv
             Environment for validation.
         val_every_n_steps : int
             Number of steps between validation runs.
-        val_steps : Optional[int]
+        val_steps : int | None
             Number of steps for validation (mutually exclusive with val_episodes).
-        val_episodes : Optional[int]
+        val_episodes : int | None
             Number of episodes for validation (mutually exclusive with val_steps).
         """
         running = True
@@ -187,7 +187,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Returns
         -------
-        List[float]
+        list[float]
             History of episode rewards collected during training.
         """
         num_workers = NUM_NODES - 1
@@ -291,7 +291,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Union[DistClassicRLEnv, VectorEnv]
+        env : DistClassicRLEnv | VectorEnv
             Environment instance to run on this worker node.
         """
         status = MPI.Status()
@@ -352,16 +352,18 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | VectorEnv
             The environment to train.
         steps : int
             Number of steps to train.
-        eval_env : Env
-            The evaluation environment.
-        eval_steps : int
-            Number of steps to evaluate.
-        eval_every_n_steps : int
-            Evaluate the agent every n steps.
+        val_env : DistClassicRLEnv | VectorEnv
+            The validation environment.
+        val_every_n_steps : int
+            Validate the agent every n steps.
+        val_steps : int | None
+            Number of steps to validate.
+        val_episodes : int | None
+            Number of episodes to validate.
         batch_size : int
             Batch size for training.
         """
@@ -397,14 +399,14 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Union[DistClassicRLEnv, VectorEnv]
+        env : DistClassicRLEnv | VectorEnv
             The environment to evaluate.
         steps : int
             Number of steps to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
@@ -439,14 +441,14 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Union[DistClassicRLEnv, VectorEnv]
+        env : DistClassicRLEnv | VectorEnv
             The environment to evaluate.
         episodes : int
             Number of episodes to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)

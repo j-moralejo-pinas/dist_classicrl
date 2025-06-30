@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import gymnasium as gym
 import numpy as np
 from gymnasium.utils.seeding import np_random
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 class TicTacToeEnv(gym.Env):
@@ -15,6 +18,9 @@ class TicTacToeEnv(gym.Env):
 
     Attributes
     ----------
+    metadata : ClassVar[dict[str, Any]]
+        Metadata for the environment, including supported rendering modes.
+        Currently supports only "human" mode for rendering the board state.
     action_space : gym.spaces.Discrete
         Discrete action space with 9 possible moves (0-8).
     observation_space : gym.spaces.Dict
@@ -29,29 +35,25 @@ class TicTacToeEnv(gym.Env):
         The mark for the agent (1 for 'X', 2 for 'O').
     machine_mark : int
         The mark for the machine (1 for 'X', 2 for 'O').
-    board : np.ndarray
+    board : NDArray[np.int8]
         The current state of the TicTacToe board as a 3x3 numpy array of integers.
         Values are:
         - 0: empty cell
         - 1: agent's mark ('X')
         - 2: machine's mark ('O')
-    _np_random : np.random.Generator
-        Random number generator for reproducibility and randomness in actions.
-    _np_random_seed : int | None
-        Seed for the random number generator, used for reproducibility.
-        If None, a default seed is used.
-    metadata : ClassVar[dict[str, Any]]
-        Metadata for the environment, including supported rendering modes.
-        Currently supports only "human" mode for rendering the board state.
+
+
     """
 
     metadata: ClassVar[dict[str, Any]] = {"render.modes": ["human"]}
     _np_random: np.random.Generator
     _np_random_seed: int | None = None
-    board: np.ndarray
+    action_space: gym.spaces.Discrete
+    observation_space: gym.spaces.Dict
     agent_starts: bool
     agent_mark: int
     machine_mark: int
+    board: NDArray[np.int8]
 
     def __init__(self) -> None:
         super().__init__()
@@ -74,12 +76,12 @@ class TicTacToeEnv(gym.Env):
 
         Parameters
         ----------
-        seed : int, optional
+        seed : int | None, optional
             Random seed for reproducibility (default: None).
 
         Returns
         -------
-        Tuple[Dict[str, np.ndarray], Dict[str, Any]]
+        tuple[dict[str, np.ndarray], dict[str, Any]]
             Tuple containing:
             - observation: Initial board state and action mask
             - info: Additional information (empty dict)
@@ -121,14 +123,9 @@ class TicTacToeEnv(gym.Env):
 
         Returns
         -------
-        Optional[Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]]
+        tuple[dict[str, np.ndarray], float, bool, bool, dict[str, Any]] | None
             If the game ends after this move, returns the step result tuple.
             Otherwise, returns None.
-
-        Raises
-        ------
-        AssertionError
-            If the move is invalid (position already occupied).
         """
         row, col = divmod(move, 3)
         assert self.board[row, col] == 0, "Invalid move."
@@ -153,7 +150,7 @@ class TicTacToeEnv(gym.Env):
 
         Returns
         -------
-        Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]
+        tuple[dict[str, np.ndarray], float, bool, bool, dict[str, Any]]
             Tuple containing:
             - observation: Current board state and action mask
             - reward: Reward for the agent (1 for win, -1 for loss, 0 otherwise)
@@ -182,11 +179,6 @@ class TicTacToeEnv(gym.Env):
         -------
         int
             Index (0-8) of a valid move on the board.
-
-        Raises
-        ------
-        AssertionError
-            If no valid moves are available.
         """
         # Get a random valid move for the machine.
         valid_moves = self._get_valid_moves()
@@ -199,7 +191,7 @@ class TicTacToeEnv(gym.Env):
 
         Returns
         -------
-        List[int]
+        list[int]
             List of indices (0-8) representing empty positions on the board.
         """
         # Return a list of indices (0-8) where the board is empty.
@@ -211,7 +203,7 @@ class TicTacToeEnv(gym.Env):
 
         Returns
         -------
-        Dict[str, np.ndarray]
+        dict[str, np.ndarray]
             Dictionary containing:
             - 'observation': Flattened board state as a (9,) array
             - 'action_mask': Binary mask indicating valid moves as a (9,) array
@@ -228,7 +220,7 @@ class TicTacToeEnv(gym.Env):
 
         Returns
         -------
-        Optional[int]
+        int | None
             The mark (1 or 2) of the winning player, or None if no winner.
         """
         b = self.board

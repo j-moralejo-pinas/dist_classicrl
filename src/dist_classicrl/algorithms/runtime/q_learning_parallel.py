@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 from multiprocessing import Value, connection, shared_memory
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
@@ -30,6 +30,13 @@ class ParallelQLearning(OptimalQLearningBase):
     """
     Single environment Q-learning agent.
 
+    Parameters
+    ----------
+    *args : Any
+        Variable length argument list for base class initialization.
+    **kwargs : Any
+        Arbitrary keyword arguments for base class initialization.
+
     Attributes
     ----------
     num_agents : int
@@ -48,8 +55,14 @@ class ParallelQLearning(OptimalQLearningBase):
         Decay rate for exploration rate.
     min_exploration_rate : float
         Minimum exploration rate.
-    q_table : mp.Array
+    q_table : NDArray[np.float32]
         Shared memory array for the Q-table.
+    sm : shared_memory.SharedMemory
+        Shared memory object for the Q-table.
+    sm_lock : Lock
+        Lock for synchronizing access to shared memory.
+    sm_name : str
+        Name of the shared memory object.
     """
 
     num_agents: int
@@ -67,7 +80,7 @@ class ParallelQLearning(OptimalQLearningBase):
 
     sm_name: str = "q_table"
 
-    def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002 ANN003
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.sm = shared_memory.SharedMemory(
             name=self.sm_name, create=True, size=self.q_table.nbytes
@@ -103,16 +116,18 @@ class ParallelQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
-            The environment to train.
+        envs : Sequence[DistClassicRLEnv] | Sequence[VectorEnv]
+            The environments to train.
         steps : int
             Number of steps to train.
-        eval_env : Env
-            The evaluation environment.
-        eval_steps : int
-            Number of steps to evaluate.
-        eval_every_n_steps : int
-            Evaluate the agent every n steps.
+        val_env : DistClassicRLEnv | VectorEnv
+            The validation environment.
+        val_every_n_steps : int
+            Validate the agent every n steps.
+        val_steps : int | None
+            Number of steps to validate.
+        val_episodes : int | None
+            Number of episodes to validate.
         """
         try:
             assert (val_steps is None) ^ (val_episodes is None), (
@@ -188,22 +203,24 @@ class ParallelQLearning(OptimalQLearningBase):
         curr_state: dict | None = None,
     ) -> None:
         """
-        Run a single environment with multiple agents for a given number of episodes.
+        Run a single environment with multiple agents for a given number of steps.
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | VectorEnv
             The environment to run.
-        agent : MultiAgentQLearning
-            The multi-agent Q-learning agent.
-        num_agents : int
-            Number of agents in the environment.
-        episodes : int
-            Number of episodes to run.
-        max_steps : int
-            Maximum number of steps per episode.
-        return_queue : mp.Queue
-            Queue to collect total rewards from the environment.
+        num_steps : int
+            Number of steps to run.
+        rewards_queue : mp.Queue
+            Queue to collect rewards from the environment.
+        sm_lock : Lock
+            Lock for synchronizing access to shared memory.
+        exploration_rate_value : Synchronized
+            Shared exploration rate value.
+        curr_state_pipe : connection.Connection | None
+            Pipe for communicating current state.
+        curr_state : dict | None
+            Current state dictionary, by default None.
         """
         self.sm_lock = sm_lock
         self._exploration_rate = exploration_rate_value
@@ -271,14 +288,14 @@ class ParallelQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | VectorEnv
             The environment to evaluate.
         steps : int
             Number of steps to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
@@ -313,14 +330,14 @@ class ParallelQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | VectorEnv
             The environment to evaluate.
         episodes : int
             Number of episodes to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)

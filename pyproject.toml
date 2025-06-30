@@ -82,6 +82,7 @@ ignore = [
     "FIX002", # Line contains TODO, consider resolving the issue
     "PLR0913",  # Too many arguments in function definition
     "PLR0915", # Too many statements
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
 ]
 select = ["ALL"]
 exclude = ["src/dist_classicrl/old/*", "src/dist_classicrl/wrappers/parallel_wrapper.py", "tests/*"]
@@ -100,4 +101,9 @@ convention = "numpy"
 ]
 
 [tool.pydoclint]
-style = 'google'
+style = 'numpy'
+
+[tool.docformatter]
+style = 'numpy'
+wrap-summaries = 100
+wrap-descriptions = 100

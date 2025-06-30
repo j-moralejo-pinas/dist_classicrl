@@ -49,7 +49,7 @@ class MultiAgentQLearningLists:
         Decay rate for exploration rate.
     min_exploration_rate : float
         Minimum exploration rate.
-    q_table : List[float]
+    q_table : list[float]
         Q-table for the agents.
     """
 
@@ -108,14 +108,14 @@ class MultiAgentQLearningLists:
 
         Parameters
         ----------
-        states : List[int]
+        states : list[int]
             List of state indices.
-        actions : List[int]
+        actions : list[int]
             List of action indices.
 
         Returns
         -------
-        List[float]
+        list[float]
             Q-values for the state-action pairs.
         """
         return [self.get_q_value(state, action) for state, action in zip(states, actions)]
@@ -131,7 +131,7 @@ class MultiAgentQLearningLists:
 
         Returns
         -------
-        List[float]
+        list[float]
             Q-values for the state.
         """
         return self.q_table[state * self.action_size : (state + 1) * self.action_size]
@@ -145,12 +145,12 @@ class MultiAgentQLearningLists:
 
         Parameters
         ----------
-        states : List[int]
+        states : list[int]
             List of state indices.
 
         Returns
         -------
-        List[List[float]]
+        list[list[float]]
             Q-values for the states.
         """
         return [self.get_state_q_values(state) for state in states]
@@ -191,11 +191,11 @@ class MultiAgentQLearningLists:
 
         Parameters
         ----------
-        states : List[int]
+        states : list[int]
             List of state indices.
-        actions : List[int]
+        actions : list[int]
             List of action indices.
-        values : List[float]
+        values : list[float]
             List of Q-values to add.
         """
         for state, action, value in zip(states, actions, values):
@@ -224,7 +224,7 @@ class MultiAgentQLearningLists:
             Current state of the agent.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_mask : Optional[List[int]], optional
+        action_mask : list[int] | None, optional
             Mask for valid actions, by default None.
 
         Returns
@@ -279,16 +279,16 @@ class MultiAgentQLearningLists:
 
         Parameters
         ----------
-        states : List[int]
+        states : list[int]
             Current states of all agents.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_masks : Optional[List[List[int]]], optional
+        action_masks : list[list[int]] | None
             Masks for valid actions, by default None.
 
         Returns
         -------
-        List[int]
+        list[int]
             Actions chosen for all agents.
         """
         if action_masks:
@@ -309,13 +309,13 @@ class MultiAgentQLearningLists:
 
         Parameters
         ----------
-        states : List[int]
+        states : list[int]
             Current states of all agents.
-        actions : List[int]
+        actions : list[int]
             Actions taken by all agents.
-        rewards : List[float]
+        rewards : list[float]
             Rewards received by all agents.
-        next_states : List[int]
+        next_states : list[int]
             Next states of all agents.
         """
         for state, action, reward, next_state in zip(states, actions, rewards, next_states):

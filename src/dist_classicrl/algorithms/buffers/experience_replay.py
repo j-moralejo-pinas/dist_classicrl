@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 class ExperienceReplay:
@@ -34,14 +39,16 @@ class ExperienceReplay:
         Current position in the buffer for the next experience.
     full : bool
         Flag indicating whether the buffer is full.
+    rng : np.random.Generator
+        Random number generator for sampling.
     """
 
     capacity: int
-    state_buffer: np.typing.NDArray[np.int32]
-    action_buffer: np.typing.NDArray[np.int32]
-    reward_buffer: np.typing.NDArray[np.float32]
-    next_state_buffer: np.typing.NDArray[np.int32]
-    done_buffer: np.typing.NDArray[np.bool_]
+    state_buffer: NDArray[np.int32]
+    action_buffer: NDArray[np.int32]
+    reward_buffer: NDArray[np.float32]
+    next_state_buffer: NDArray[np.int32]
+    done_buffer: NDArray[np.bool_]
     position: int
     full: bool
     rng: np.random.Generator
@@ -63,7 +70,7 @@ class ExperienceReplay:
 
         Parameters
         ----------
-        experience : Tuple[int, int, float, int, bool]
+        experience : tuple[int, int, float, int, bool]
             A tuple containing (state, action, reward, next_state, done).
         """
         state, action, reward, next_state, done = experience
@@ -86,7 +93,7 @@ class ExperienceReplay:
 
         Returns
         -------
-        Tuple[int, int, float, int, bool]
+        tuple[int, int, float, int, bool]
             A tuple containing arrays of states, actions, rewards,
             next states, and done flags.
         """

@@ -51,10 +51,10 @@ repos:
   # Ruff version.
   rev: v0.12.1
   hooks:
+  # Run the formatter.
+    - id: ruff-format
     # Run the linter.
     - id: ruff
-    # Run the formatter.
-    - id: ruff-format
 
 - repo: https://github.com/RobertCraigie/pyright-python
   rev: v1.1.402
@@ -126,6 +126,5 @@ repos:
 #   hooks:
 #   - id: pip-audit
 
-# darglint
 # cspell
 # docformatter

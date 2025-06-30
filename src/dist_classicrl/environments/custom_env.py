@@ -48,18 +48,16 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
         Returns
         -------
-        Tuple
-            Tuple containing:
-            - observations: Union[Dict[str, NDArray[np.int32]], NDArray[np.int32]]
-              Next observations for all agents
-            - rewards: NDArray[np.float32]
-              Rewards for all agents
-            - terminated: NDArray[np.bool]
-              Terminated flags for all agents
-            - truncated: NDArray[np.bool]
-              Truncated flags for all agents
-            - infos: List[Dict]
-              Info dictionaries for all agents
+        dict[str, NDArray[np.int32]] | NDArray[np.int32]
+            Observations for each agent, either as a dictionary or a single array.
+        NDArray[np.float32]
+            Rewards for each agent.
+        NDArray[np.bool]
+            Termination flags for each agent.
+        NDArray[np.bool]
+            Truncation flags for each agent.
+        list[dict]
+            List of info dictionaries for each agent, containing additional information.
         """
 
     @abc.abstractmethod
@@ -74,19 +72,15 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
         Parameters
         ----------
-        seed : Optional[int], optional
+        seed : int | None, optional
             Random seed for environment reset.
-        options : Optional[Dict[str, Any]], optional
+        options : dict[str, Any] | None, optional
             Additional options for environment reset.
 
         Returns
         -------
-        Tuple
-            Tuple containing:
-            - observations: Union[Dict[str, NDArray[np.int32]], NDArray[np.int32]]
-              Initial observations for all agents
-            - infos: List[Dict]
-              Info dictionaries for all agents
+        tuple[dict[str, NDArray[np.int32]] | NDArray[np.int32], list[dict]]
+            Tuple containing initial observations and info dictionaries.
         """
 
     @abc.abstractmethod
@@ -115,7 +109,7 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
         Returns
         -------
-        Dict
+        dict[str, Any]
             Dictionary containing environment metadata.
         """
 
@@ -126,6 +120,6 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
         Returns
         -------
-        Dict
+        dict[str, Any]
             Dictionary containing agent metadata.
         """

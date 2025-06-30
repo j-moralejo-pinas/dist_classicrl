@@ -40,8 +40,8 @@ class SingleThreadQLearning(OptimalQLearningBase):
         Decay rate for exploration rate.
     min_exploration_rate : float
         Minimum exploration rate.
-    q_table : mp.Array
-        Shared memory array for the Q-table.
+    q_table : NDArray[np.float32]
+        Q-table for the agents.
     """
 
     state_size: int
@@ -67,16 +67,18 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | SyncVectorEnv
             The environment to train.
         steps : int
             Number of steps to train.
-        eval_env : Env
-            The evaluation environment.
-        eval_steps : int
-            Number of steps to evaluate.
-        eval_every_n_steps : int
-            Evaluate the agent every n steps.
+        val_env : DistClassicRLEnv | SyncVectorEnv
+            The validation environment.
+        val_every_n_steps : int
+            Validate the agent every n steps.
+        val_steps : int | None
+            Number of steps to validate.
+        val_episodes : int | None
+            Number of episodes to validate.
         """
         assert (val_steps is None) ^ (val_episodes is None), (
             "Either val_steps or val_episodes should be provided."
@@ -143,14 +145,14 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | SyncVectorEnv
             The environment to evaluate.
         steps : int
             Number of steps to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)
@@ -185,14 +187,14 @@ class SingleThreadQLearning(OptimalQLearningBase):
 
         Parameters
         ----------
-        env : Env
+        env : DistClassicRLEnv | SyncVectorEnv
             The environment to evaluate.
         episodes : int
             Number of episodes to evaluate.
 
         Returns
         -------
-        Tuple[float, Dict[Any, float]]
+        tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
         states, infos = env.reset(seed=42)

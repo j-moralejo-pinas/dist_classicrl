@@ -30,11 +30,6 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
     env : gymnasium.Env
         Environment with MultiDiscrete or Discrete action space.
 
-    Raises
-    ------
-    AssertionError
-        If the action space is not MultiDiscrete or Discrete.
-
     Attributes
     ----------
     action_radix : NDArray[np.int32]
@@ -94,16 +89,11 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
         Environment with MultiDiscrete observation space or Dict observation space
         containing a MultiDiscrete 'observation' key.
 
-    Raises
-    ------
-    AssertionError
-        If the observation space format is not supported.
-
     Attributes
     ----------
     observation_radix : NDArray[np.int32]
         Radix array for encoding observations.
-    observation_space : Union[spaces.Discrete, spaces.Dict]
+    observation_space : spaces.Discrete | spaces.Dict
         Flattened observation space.
     observation_nvec : NDArray[np.int32]
         Original multi-discrete observation space dimensions.
@@ -154,13 +144,13 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
 
         Parameters
         ----------
-        observation : Union[NDArray[np.int32], Dict[str, Union[NDArray[np.int32], Any]]]
+        observation : NDArray[np.int32] | dict[str, NDArray[np.int32] | Any]
             Original observation, either a multi-discrete array or a dictionary
             containing an 'observation' key with multi-discrete values.
 
         Returns
         -------
-        Union[int, Dict[str, Union[int, Any]]]
+        int | dict[str, int | Any]
             Flattened observation with multi-discrete values encoded as integers.
         """
         if isinstance(observation, dict):

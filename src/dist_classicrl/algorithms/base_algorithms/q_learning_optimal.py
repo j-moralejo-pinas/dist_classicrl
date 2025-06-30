@@ -29,9 +29,9 @@ class OptimalQLearningBase:
 
     Parameters
     ----------
-    state_size : int
+    state_size : int | np.integer
         Size of the state space.
-    action_size : int
+    action_size : int | np.integer
         Size of the action space.
     learning_rate : float, optional
         Learning rate for Q-learning, by default 0.1.
@@ -62,7 +62,7 @@ class OptimalQLearningBase:
         Decay rate for exploration rate.
     min_exploration_rate : float
         Minimum exploration rate.
-    q_table : List[float]
+    q_table : NDArray[np.float64]
         Q-table for the agents.
     """
 
@@ -276,10 +276,10 @@ class OptimalQLearningBase:
         ----------
         state : int
             Current state of the agent.
+        action_mask : list[int]
+            Mask for valid actions.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_mask : Optional[List[int]], optional
-            Mask for valid actions, by default None.
 
         Returns
         -------
@@ -317,16 +317,16 @@ class OptimalQLearningBase:
 
         Parameters
         ----------
-        states : List[int]
+        states : NDArray[np.int32]
             Current states of all agents.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_masks : Optional[List[List[int]]], optional
+        action_masks : NDArray[np.int32] | None
             Masks for valid actions, by default None.
 
         Returns
         -------
-        List[int]
+        NDArray[np.int32]
             Actions chosen for all agents.
         """
         if action_masks is None:
@@ -385,7 +385,7 @@ class OptimalQLearningBase:
         ----------
         state : int
             Current state of the agent.
-        action_mask : NDArray[np.int32]
+        action_mask : list[int]
             Mask for valid actions.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
@@ -424,7 +424,7 @@ class OptimalQLearningBase:
             Current states of all agents.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_masks : Optional[NDArray[np.int32]], optional
+        action_masks : NDArray[np.int32] | None
             Masks for valid actions, by default None.
 
         Returns
@@ -571,7 +571,7 @@ class OptimalQLearningBase:
             Current states of all agents.
         deterministic : bool, optional
             Whether to choose the action deterministically, by default False.
-        action_masks : Optional[NDArray[np.int32]], optional
+        action_masks : NDArray[np.int32] | None
             Masks for valid actions, by default None.
 
         Returns
@@ -633,6 +633,8 @@ class OptimalQLearningBase:
             Next state of the agent.
         terminated : bool
             Whether the episode has terminated.
+        next_action_mask : NDArray[np.int32] | None
+            Mask for valid actions in the next state, by default None.
         """
         if next_action_mask is None:
             max_next_q_value = 0 if terminated else np.max(self.get_state_q_values(next_state))
@@ -668,6 +670,10 @@ class OptimalQLearningBase:
             Rewards received by all agents.
         next_states : NDArray[np.int32]
             Next states of all agents.
+        terminated : NDArray[np.bool]
+            Whether each episode has terminated.
+        next_action_masks : NDArray[np.int32] | None
+            Masks for valid actions in the next states, by default None.
         """
         if next_action_masks is None:
             for state, action, reward, next_state, term in zip(
@@ -701,14 +707,18 @@ class OptimalQLearningBase:
 
         Parameters
         ----------
-        states : List[int]
+        states : NDArray[np.int32]
             Current states of all agents.
-        actions : List[int]
+        actions : NDArray[np.int32]
             Actions taken by all agents.
-        rewards : List[float]
+        rewards : NDArray[np.float32]
             Rewards received by all agents.
-        next_states : List[int]
+        next_states : NDArray[np.int32]
             Next states of all agents.
+        terminated : NDArray[np.bool]
+            Whether each episode has terminated.
+        next_action_masks : NDArray[np.int32] | None
+            Masks for valid actions in the next states, by default None.
         """
         self._learn_vec(states, actions, rewards, next_states, terminated, next_action_masks)
 
@@ -734,6 +744,10 @@ class OptimalQLearningBase:
             Rewards received by all agents.
         next_states : NDArray[np.int32]
             Next states of all agents.
+        terminated : NDArray[np.bool]
+            Whether each episode has terminated.
+        next_action_masks : NDArray[np.int32] | None
+            Masks for valid actions in the next states, by default None.
         """
         if next_action_masks is None:
             max_next_q_values = np.max(self.get_states_q_values(next_states), axis=1)
@@ -767,6 +781,10 @@ class OptimalQLearningBase:
             Rewards received by all agents.
         next_states : NDArray[np.int32]
             Next states of all agents.
+        terminated : NDArray[np.bool]
+            Whether each episode has terminated.
+        next_action_masks : NDArray[np.int32] | None
+            Masks for valid actions in the next states, by default None.
         """
         if len(states) > NUM_STATES_LEARN_THRESHOLD:
             self.learn_vec(states, actions, rewards, next_states, terminated, next_action_masks)
