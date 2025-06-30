@@ -12,6 +12,25 @@ class MultiAgentQLearningLists:
     """
     Multi-agent Q-learning class.
 
+    Parameters
+    ----------
+    num_agents : int
+        Number of agents in the environment.
+    state_size : int
+        Size of the state space.
+    action_size : int
+        Size of the action space.
+    learning_rate : float, optional
+        Learning rate for Q-learning, by default 0.1.
+    discount_factor : float, optional
+        Discount factor for future rewards, by default 0.99.
+    exploration_rate : float, optional
+        Initial exploration rate for epsilon-greedy policy, by default 1.0.
+    exploration_decay : float, optional
+        Decay rate for exploration rate, by default 0.995.
+    min_exploration_rate : float, optional
+        Minimum exploration rate, by default 0.01.
+
     Attributes
     ----------
     num_agents : int
@@ -55,28 +74,6 @@ class MultiAgentQLearningLists:
         exploration_decay: float = 0.999,
         min_exploration_rate: float = 0.01,
     ) -> None:
-        """
-        Initialize the MultiAgentQLearning class.
-
-        Parameters
-        ----------
-        num_agents : int
-            Number of agents in the environment.
-        state_size : int
-            Size of the state space.
-        action_size : int
-            Size of the action space.
-        learning_rate : float, optional
-            Learning rate for Q-learning, by default 0.1.
-        discount_factor : float, optional
-            Discount factor for future rewards, by default 0.99.
-        exploration_rate : float, optional
-            Initial exploration rate for epsilon-greedy policy, by default 1.0.
-        exploration_decay : float, optional
-            Decay rate for exploration rate, by default 0.995.
-        min_exploration_rate : float, optional
-            Minimum exploration rate, by default 0.01.
-        """
         self.num_agents = num_agents
         self.state_size = state_size
         self.action_size = action_size

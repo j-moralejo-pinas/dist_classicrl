@@ -28,17 +28,6 @@ class DistClassicRLEnv(abc.ABC, gym.Env):
 
     num_agents: int
 
-    def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
-        """
-        Initialize the environment.
-
-        Parameters
-        ----------
-        **kwargs
-            Additional keyword arguments passed to the parent class.
-        """
-        super().__init__(**kwargs)
-
     @abc.abstractmethod
     def step(
         self, actions: NDArray[np.int32]

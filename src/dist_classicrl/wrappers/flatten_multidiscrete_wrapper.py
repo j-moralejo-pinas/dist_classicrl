@@ -25,6 +25,16 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
     This wrapper converts a MultiDiscrete action space into a single Discrete action space
     by encoding multi-discrete actions into integers.
 
+    Parameters
+    ----------
+    env : gymnasium.Env
+        Environment with MultiDiscrete or Discrete action space.
+
+    Raises
+    ------
+    AssertionError
+        If the action space is not MultiDiscrete or Discrete.
+
     Attributes
     ----------
     action_radix : NDArray[np.int32]
@@ -40,19 +50,6 @@ class FlattenMultiDiscreteActionsWrapper(gymnasium.ActionWrapper):
     action_nvec: NDArray[np.int32]
 
     def __init__(self, env: gymnasium.Env) -> None:
-        """
-        Initialize the FlattenMultiDiscreteActionsWrapper.
-
-        Parameters
-        ----------
-        env : gymnasium.Env
-            Environment with MultiDiscrete or Discrete action space.
-
-        Raises
-        ------
-        AssertionError
-            If the action space is not MultiDiscrete or Discrete.
-        """
         super().__init__(env)
         action_space = env.action_space
         assert isinstance(action_space, (spaces.MultiDiscrete, spaces.Discrete)), (
@@ -91,6 +88,17 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
     observation spaces) into single Discrete observation spaces by encoding multi-discrete
     observations into integers.
 
+    Parameters
+    ----------
+    env : gymnasium.Env
+        Environment with MultiDiscrete observation space or Dict observation space
+        containing a MultiDiscrete 'observation' key.
+
+    Raises
+    ------
+    AssertionError
+        If the observation space format is not supported.
+
     Attributes
     ----------
     observation_radix : NDArray[np.int32]
@@ -106,20 +114,6 @@ class FlattenMultiDiscreteObservationsWrapper(gymnasium.ObservationWrapper):
     observation_nvec: NDArray[np.int32]
 
     def __init__(self, env: gymnasium.Env) -> None:
-        """
-        Initialize the FlattenMultiDiscreteObservationsWrapper.
-
-        Parameters
-        ----------
-        env : gymnasium.Env
-            Environment with MultiDiscrete observation space or Dict observation space
-            containing a MultiDiscrete 'observation' key.
-
-        Raises
-        ------
-        AssertionError
-            If the observation space format is not supported.
-        """
         super().__init__(env)
 
         observation_space = env.observation_space

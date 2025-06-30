@@ -41,7 +41,7 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "black", "mypy", "pre-commit", "isort", "ruff"]
+dev = ["pytest", "pyright", "pre-commit", "ruff"] # , "isort", "black"
 docs = ["sphinx", "sphinx-autoapi", "sphinx_rtd_theme", "sphinxcontrib-napoleon"]
 
 [tool.pytest.ini_options]
@@ -84,7 +84,7 @@ ignore = [
     "PLR0915", # Too many statements
 ]
 select = ["ALL"]
-exclude = ["src/dist_classicrl/algorithms/base_algorithms/old/*", "src/dist_classicrl/wrappers/parallel_wrapper.py", "tests/*"]
+exclude = ["src/dist_classicrl/old/*", "src/dist_classicrl/wrappers/parallel_wrapper.py", "tests/*"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100
@@ -98,3 +98,6 @@ convention = "numpy"
     "PLR2004", # Magic value used in comparison
     "INP001", # File is part of an implicit namespace package.
 ]
+
+[tool.pydoclint]
+style = 'google'

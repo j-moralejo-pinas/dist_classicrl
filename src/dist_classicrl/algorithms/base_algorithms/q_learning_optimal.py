@@ -27,6 +27,25 @@ class OptimalQLearningBase:
     It is implemented in different ways for different scenarios, giving the best performance
     at each case.
 
+    Parameters
+    ----------
+    state_size : int
+        Size of the state space.
+    action_size : int
+        Size of the action space.
+    learning_rate : float, optional
+        Learning rate for Q-learning, by default 0.1.
+    discount_factor : float, optional
+        Discount factor for future rewards, by default 0.99.
+    exploration_rate : float, optional
+        Initial exploration rate for epsilon-greedy policy, by default 1.0.
+    exploration_decay : float, optional
+        Decay rate for exploration rate, by default 0.995.
+    min_exploration_rate : float, optional
+        Minimum exploration rate, by default 0.01.
+    seed : int | None, optional
+        Random seed for reproducibility, by default None.
+
     Attributes
     ----------
     state_size : int
@@ -68,28 +87,6 @@ class OptimalQLearningBase:
         min_exploration_rate: float = 0.01,
         seed: int | None = None,
     ) -> None:
-        """
-        Initialize the MultiAgentQLearning class.
-
-        Parameters
-        ----------
-        state_size : int
-            Size of the state space.
-        action_size : int
-            Size of the action space.
-        learning_rate : float, optional
-            Learning rate for Q-learning, by default 0.1.
-        discount_factor : float, optional
-            Discount factor for future rewards, by default 0.99.
-        exploration_rate : float, optional
-            Initial exploration rate for epsilon-greedy policy, by default 1.0.
-        exploration_decay : float, optional
-            Decay rate for exploration rate, by default 0.995.
-        min_exploration_rate : float, optional
-            Minimum exploration rate, by default 0.01.
-        seed : int | None, optional
-            Random seed for reproducibility, by default None.
-        """
         self.state_size = int(state_size)
         self.action_size = int(action_size)
         self.learning_rate = learning_rate

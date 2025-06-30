@@ -9,6 +9,13 @@ class ExperienceReplay:
     """
     Experience Replay buffer for storing and sampling experiences.
 
+    Parameters
+    ----------
+    capacity : int
+        Maximum number of experiences to store in the buffer.
+    seed : int
+        Random seed for reproducibility.
+
     Attributes
     ----------
     capacity : int
@@ -40,16 +47,6 @@ class ExperienceReplay:
     rng: np.random.Generator
 
     def __init__(self, capacity: int, seed: int) -> None:
-        """
-        Initialize the Experience Replay buffer.
-
-        Parameters
-        ----------
-        capacity : int
-            Maximum number of experiences to store in the buffer.
-        seed : int
-            Random seed for reproducibility.
-        """
         self.capacity = capacity
         self.state_buffer = np.empty((capacity,), dtype=int)
         self.action_buffer = np.empty((capacity,), dtype=int)
