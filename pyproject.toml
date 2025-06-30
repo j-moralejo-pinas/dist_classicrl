@@ -41,7 +41,7 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "pyright", "pre-commit", "ruff", "pydoclint", "docformatter"] # , "isort", "black"
+dev = ["pytest", "pyright", "pre-commit", "ruff", "pydoclint", "docformatter", "pytest", "pytest-cov"] # , "isort", "black"
 docs = ["sphinx", "sphinx-autoapi", "sphinx_rtd_theme", "sphinxcontrib-napoleon"]
 
 [tool.pytest.ini_options]
@@ -49,6 +49,12 @@ pythonpath = ["src", "tests"]
 addopts = "-ra --strict-markers"
 # norecursedirs = ["build", "dist"]
 testpaths = ["tests/dist_classicrl"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+  "src/dist_classicrl/old/*",
+]
 
 [tool.black]
 line-length = 100
@@ -85,7 +91,7 @@ ignore = [
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
 ]
 select = ["ALL"]
-exclude = ["src/dist_classicrl/old/*", "src/dist_classicrl/wrappers/parallel_wrapper.py", "tests/*"]
+exclude = ["src/dist_classicrl/old/*", "tests/*"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100

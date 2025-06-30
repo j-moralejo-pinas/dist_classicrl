@@ -64,17 +64,19 @@ repos:
     # Run the linter.
     - id: ruff
 
-- repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.402
-  hooks:
-  - id: pyright
-
 - repo: https://github.com/jsh9/pydoclint
   rev: 0.6.7
   hooks:
   - id: pydoclint
     files: ^src/.*\.py
     exclude: ^src/dist_classicrl/old/.*\.py
+
+- repo: https://github.com/RobertCraigie/pyright-python
+  rev: v1.1.402
+  hooks:
+  - id: pyright
+
+
 
 # - repo: https://github.com/pre-commit/mirrors-pylint
 #   rev: v3.0.0a5  # Use latest stable Pylint

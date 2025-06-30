@@ -2,9 +2,80 @@
 # MODIFY IT ACCORDING TO YOUR NEEDS!
 # Reference: https://docs.github.com/en/actions
 
-# name: tests
+name: main_pr
 
-# on:
+pull_request:
+  branches:
+    - main
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PDM
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdm
+
+      - name: Install dependencies
+        run: |
+          pdm install -G dev
+
+      - name: Pyupgrade
+        run: |
+          find src -name "*.py" \
+            ! -path "src/dist_classicrl/old/*" \
+            -exec pdm run pyupgrade --py38-plus --exit-zero-even-if-changed {} +
+
+      - name: Ruff Format Check
+        uses: chartboost/ruff-action@v1
+        with:
+          args: format --check .
+
+      - name: Docformatter
+        run: pdm run docformatter --check --recursive src/ --exclude src/dist_classicrl/old/
+
+      - name: Ruff Check
+        uses: chartboost/ruff-action@v1
+        with:
+          args: check .
+
+      - name: Pyright
+        uses: jakebailey/pyright-action@v1
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PDM
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdm
+
+      - name: Install dependencies
+        run: |
+          pdm install -G dev
+
+      - name: Run tests
+        run: pdm run pytest --cov=src --cov-report=term-missing
+
 #   push:
 #     # Avoid using all the resources/limits available by checking only
 #     # relevant branches and tags. Other branches can be checked via PRs.
