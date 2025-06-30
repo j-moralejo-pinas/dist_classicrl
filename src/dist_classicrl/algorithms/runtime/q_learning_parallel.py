@@ -93,8 +93,8 @@ class ParallelQLearning(OptimalQLearningBase):
         """
         Update the exploration rate.
 
-        This method overrides the base class method to ensure thread safety
-        when updating the exploration rate in a multi-agent setting.
+        This method overrides the base class method to ensure thread safety when updating the
+        exploration rate in a multi-agent setting.
         """
         self._exploration_rate.value = max(
             self._exploration_rate.value * self.exploration_decay,

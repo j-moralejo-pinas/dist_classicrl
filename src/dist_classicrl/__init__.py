@@ -1,8 +1,8 @@
 """
 Distributed Classic Reinforcement Learning Library.
 
-This package provides distributed implementations of classic reinforcement learning
-algorithms with support for parallel training and scalable deployment.
+This package provides distributed implementations of classic reinforcement learning algorithms with
+support for parallel training and scalable deployment.
 """
 
 from importlib.metadata import PackageNotFoundError, version

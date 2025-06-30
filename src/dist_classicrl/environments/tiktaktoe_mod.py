@@ -41,8 +41,6 @@ class TicTacToeEnv(gym.Env):
         - 0: empty cell
         - 1: agent's mark ('X')
         - 2: machine's mark ('O')
-
-
     """
 
     metadata: ClassVar[dict[str, Any]] = {"render.modes": ["human"]}
