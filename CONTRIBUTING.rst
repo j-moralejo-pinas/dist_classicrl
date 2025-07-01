@@ -1,140 +1,327 @@
-.. todo:: THIS IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
-
-   The document assumes you are using a source repository service that promotes a
-   contribution model similar to `GitHub's fork and pull request workflow`_.
-   While this is true for the majority of services (like GitHub, GitLab,
-   BitBucket), it might not be the case for private repositories (e.g., when
-   using Gerrit).
-
-   Also notice that the code examples might refer to GitHub URLs or the text
-   might use GitHub specific terminology (e.g., *Pull Request* instead of *Merge
-   Request*).
-
-   Please make sure to check the document having these assumptions in mind
-   and update things accordingly.
-
-.. todo:: Provide the correct links/replacements at the bottom of the document.
-
-.. todo:: You might want to have a look on `PyScaffold's contributor's guide`_,
-
-   especially if your project is open source. The text should be very similar to
-   this template, but there are a few extra contents that you might decide to
-   also include, like mentioning labels of your issue tracker or automated
-   releases.
-
-
 ============
 Contributing
 ============
 
-Welcome to ``dist_classicrl`` contributor's guide.
+Welcome to ``dist_classicrl`` contributor's guide! 🎉
 
-This document focuses on getting any potential contributor familiarized
-with the development processes, but `other kinds of contributions`_ are also
-appreciated.
+This document will help you get started with contributing to the distributed classical
+reinforcement learning library. We welcome all types of contributions, from bug reports
+and feature requests to code improvements and documentation enhancements.
 
-If you are new to using git_ or have never collaborated in a project previously,
-please have a look at `contribution-guide.org`_. Other resources are also
-listed in the excellent `guide created by FreeCodeCamp`_ [#contrib1]_.
+If you are new to using git_ or have never collaborated on an open source project before,
+please check out the excellent `guide created by FreeCodeCamp`_ and `contribution-guide.org`_.
 
-Please notice, all users and contributors are expected to be **open,
-considerate, reasonable, and respectful**. When in doubt, `Python Software
-Foundation's Code of Conduct`_ is a good reference in terms of behavior
-guidelines.
+**Code of Conduct**: All contributors are expected to be **open, considerate, reasonable,
+and respectful**. When in doubt, the `Python Software Foundation's Code of Conduct`_
+provides excellent guidelines.
 
+Quick Start for Contributors
+=============================
 
-Issue Reports
-=============
+For those eager to get started quickly:
 
-If you experience bugs or general issues with ``dist_classicrl``, please have a look
-on the `issue tracker`_. If you don't see anything useful there, please feel
-free to fire an issue report.
+.. code-block:: bash
 
-.. tip::
-   Please don't forget to include the closed issues in your search.
-   Sometimes a solution was already reported, and the problem is considered
-   **solved**.
+    # 1. Fork the repository on GitHub
+    git clone https://github.com/YOUR-USERNAME/dist_classicrl.git
+    cd dist_classicrl
 
-New issue reports should include information about your programming environment
-(e.g., operating system, Python version) and steps to reproduce the problem.
-Please try also to simplify the reproduction steps to a very minimal example
-that still illustrates the problem you are facing. By removing other factors,
-you help us to identify the root cause of the issue.
+    # 2. Create a development environment
+    pip install -e ".[dev]"
+    pre-commit install
 
+    # 3. Create a feature branch
+    git checkout -b feature/my-awesome-feature
 
-Documentation Improvements
-==========================
+    # 4. Make your changes and test them
+    pytest tests/
 
-You can help improve ``dist_classicrl`` docs by making them more readable and coherent, or
-by adding missing information and correcting mistakes.
+    # 5. Submit a pull request
 
-``dist_classicrl`` documentation uses Sphinx_ as its main documentation compiler.
-This means that the docs are kept in the same repository as the project code, and
-that any documentation update is done in the same way was a code contribution.
-
-.. todo:: Don't forget to mention which markup language you are using.
-
-    e.g.,  reStructuredText_ or CommonMark_ with MyST_ extensions.
-
-.. todo:: If your project is hosted on GitHub, you can also mention the following tip:
-
-   .. tip::
-      Please notice that the `GitHub web interface`_ provides a quick way of
-      propose changes in ``dist_classicrl``'s files. While this mechanism can
-      be tricky for normal code contributions, it works perfectly fine for
-      contributing to the docs, and can be quite handy.
-
-      If you are interested in trying this method out, please navigate to
-      the ``docs`` folder in the source repository_, find which file you
-      would like to propose changes and click in the little pencil icon at the
-      top, to open `GitHub's code editor`_. Once you finish editing the file,
-      please write a message in the form at the bottom of the page describing
-      which changes have you made and what are the motivations behind them and
-      submit your proposal.
-
-When working on documentation changes in your local machine, you can
-compile them using |tox|_::
-
-    tox -e docs
-
-and use Python's built-in web server for a preview in your web browser
-(``http://localhost:8000``)::
-
-    python3 -m http.server --directory 'docs/_build/html'
-
-
-Code Contributions
+Ways to Contribute
 ==================
 
-.. todo:: Please include a reference or explanation about the internals of the project.
+🐛 **Bug Reports**
+------------------
 
-   An architecture description, design principles or at least a summary of the
-   main concepts will make it easy for potential contributors to get started
-   quickly.
+Found a bug? Please check the `issue tracker`_ first to see if it's already reported.
+When reporting a new bug, please include:
 
-Submit an issue
----------------
+* **Operating system and Python version**
+* **dist_classicrl version** (``python -c "import dist_classicrl; print(dist_classicrl.__version__)"`)
+* **MPI configuration** (if using distributed features)
+* **Minimal code example** that reproduces the issue
+* **Expected vs. actual behavior**
+* **Error messages and stack traces**
 
-Before you work on any non-trivial code contribution it's best to first create
-a report in the `issue tracker`_ to start a discussion on the subject.
-This often provides additional considerations and avoids unnecessary work.
+Example bug report template::
 
-Create an environment
----------------------
+    **Environment:**
+    - OS: Ubuntu 22.04
+    - Python: 3.9.15
+    - dist_classicrl: 0.1.0
+    - MPI: OpenMPI 4.1.4
 
-Before you start coding, we recommend creating an isolated `virtual
-environment`_ to avoid any problems with your installed Python packages.
-This can easily be done via either |virtualenv|_::
+    **Bug Description:**
+    ParallelQLearning crashes when using more than 4 environments
 
-    virtualenv <PATH TO VENV>
-    source <PATH TO VENV>/bin/activate
+    **Minimal Example:**
+    ```python
+    # Code that reproduces the issue
+    ```
 
-or Miniconda_::
+    **Expected:** Should train successfully
+    **Actual:** Crashes with multiprocessing error
 
-    conda create -n dist_classicrl python=3 six virtualenv pytest pytest-cov
-    conda activate dist_classicrl
+📚 **Documentation Improvements**
+---------------------------------
 
-Clone the repository
+Help us improve the documentation! You can:
+
+* Fix typos and grammar issues
+* Add missing docstrings to functions and classes
+* Improve code examples
+* Add tutorials for advanced use cases
+* Translate documentation
+
+Documentation uses Sphinx_ and can be built locally with::
+
+    pip install -e ".[docs]"
+    cd docs
+    make html
+    # Open docs/_build/html/index.html in your browser
+
+💡 **Feature Requests**
+-----------------------
+
+Have an idea for a new feature? Great! Please:
+
+1. Check existing issues to avoid duplicates
+2. Describe the problem your feature would solve
+3. Explain your proposed solution
+4. Consider implementation complexity and maintenance burden
+
+🔧 **Code Contributions**
+-------------------------
+
+We welcome code contributions! Areas where help is especially appreciated:
+
+* **New algorithms**: SARSA, Expected SARSA, Deep Q-Learning
+* **Performance optimizations**: Vectorization, memory efficiency
+* **Distributed training**: Improved MPI coordination, fault tolerance
+* **Environment integrations**: More Gymnasium/PettingZoo environments
+* **Testing**: Edge cases, integration tests, performance benchmarks
+
+Development Setup
+=================
+
+Environment Setup
+-----------------
+
+1. **Fork and Clone**
+
+   Fork the repository on GitHub, then clone your fork:
+
+   .. code-block:: bash
+
+       git clone https://github.com/YOUR-USERNAME/dist_classicrl.git
+       cd dist_classicrl
+
+2. **Create Virtual Environment**
+
+   We recommend using a virtual environment to avoid dependency conflicts:
+
+   .. code-block:: bash
+
+       # Using venv
+       python -m venv dist_classicrl_env
+       source dist_classicrl_env/bin/activate  # On Windows: dist_classicrl_env\Scripts\activate
+
+       # OR using conda
+       conda create -n dist_classicrl python=3.9
+       conda activate dist_classicrl
+
+3. **Install Development Dependencies**
+
+   .. code-block:: bash
+
+       pip install -e ".[dev]"
+
+   This installs the package in editable mode with all development dependencies:
+
+   * ``pytest`` and ``pytest-cov`` for testing
+   * ``pre-commit`` for code quality hooks
+   * ``ruff`` for linting and formatting
+   * ``pyright`` for type checking
+   * ``sphinx`` for documentation
+
+4. **Set Up Pre-commit Hooks**
+
+   .. code-block:: bash
+
+       pre-commit install
+
+   This automatically runs code quality checks before each commit, including:
+
+   * Code formatting with ``ruff``
+   * Import sorting
+   * Type checking with ``pyright``
+   * Documentation linting
+
+MPI Development (Optional)
+--------------------------
+
+For working on distributed training features, install MPI:
+
+.. code-block:: bash
+
+    # Ubuntu/Debian
+    sudo apt-get install libopenmpi-dev
+    pip install mpi4py
+
+    # macOS
+    brew install open-mpi
+    pip install mpi4py
+
+    # Test MPI installation
+    mpirun -n 2 python -c "from mpi4py import MPI; print(f'Rank {MPI.COMM_WORLD.Get_rank()}')"
+
+Project Architecture
+====================
+
+Understanding the codebase structure will help you contribute effectively:
+
+**Core Components:**
+
+* ``src/dist_classicrl/algorithms/``
+
+  * ``base_algorithms/``: Core Q-Learning implementations with different optimizations
+  * ``runtime/``: Execution strategies (single-thread, parallel, distributed)
+  * ``buffers/``: Experience replay (future expansion)
+
+* ``src/dist_classicrl/environments/``
+
+  * ``custom_env.py``: Abstract base for custom environments
+  * ``tiktaktoe_mod.py``: Example environment for testing
+
+* ``src/dist_classicrl/wrappers/``: Environment adapters and transformations
+* ``src/dist_classicrl/utils.py``: Utility functions for action space handling
+
+**Design Principles:**
+
+1. **Modularity**: Each algorithm and execution mode is self-contained
+2. **Performance**: Vectorized operations preferred over loops where possible
+3. **Scalability**: Support for single-thread to distributed execution
+4. **Standards Compliance**: Compatible with Gymnasium and PettingZoo
+5. **Extensibility**: Easy to add new algorithms and environments
+
+Development Workflow
+====================
+
+1. **Create a Feature Branch**
+
+   .. code-block:: bash
+
+       git checkout -b feature/descriptive-name
+       # or
+       git checkout -b bugfix/issue-123
+
+2. **Make Your Changes**
+
+   * Write clear, documented code
+   * Follow existing code style and patterns
+   * Add type hints where appropriate
+   * Update docstrings for public APIs
+
+3. **Write Tests**
+
+   * Add unit tests for new functionality
+   * Update existing tests if needed
+   * Ensure good test coverage
+   * Test both single-threaded and parallel modes when applicable
+
+   .. code-block:: bash
+
+       # Run tests locally
+       pytest tests/
+
+       # Run specific test categories
+       pytest tests/dist_classicrl/algorithms/
+       pytest tests/dist_classicrl/environments/
+
+       # Run with coverage
+       pytest --cov=dist_classicrl tests/
+
+4. **Test MPI Features (if applicable)**
+
+   .. code-block:: bash
+
+       # Run MPI tests
+       mpirun -n 3 python -m pytest tests/dist_classicrl/algorithms/runtime/test_q_learning_async_dist.py::TestDistAsyncQLearningMPI
+
+       # Or use the test runner
+       bash tests/dist_classicrl/algorithms/runtime/run_runtime_tests.sh
+
+5. **Run Performance Benchmarks**
+
+   If you've modified core algorithms, run performance tests:
+
+   .. code-block:: bash
+
+       cd dev_tests
+       python perf_test.py
+
+6. **Check Code Quality**
+
+   .. code-block:: bash
+
+       # Pre-commit will run automatically, but you can run manually:
+       pre-commit run --all-files
+
+       # Or run individual tools:
+       ruff check src/ tests/
+       ruff format src/ tests/
+       pyright src/
+
+7. **Update Documentation**
+
+   * Update docstrings for new functions/classes
+   * Add examples to the main documentation if needed
+   * Update README.rst if adding major features
+
+   .. code-block:: bash
+
+       # Build docs locally
+       cd docs
+       make html
+       # Open docs/_build/html/index.html
+
+8. **Commit Your Changes**
+
+   Write clear, descriptive commit messages:
+
+   .. code-block:: bash
+
+       git add .
+       git commit -m "feat: add SARSA algorithm implementation
+
+       - Implement SARSA with epsilon-greedy policy
+       - Add comprehensive unit tests
+       - Update documentation with usage examples
+       - Benchmark performance vs Q-Learning"
+
+9. **Push and Create Pull Request**
+
+   .. code-block:: bash
+
+       git push origin feature/descriptive-name
+
+   Then create a pull request on GitHub with:
+
+   * Clear description of changes
+   * Link to relevant issues
+   * Screenshots/examples if applicable
+   * Mention any breaking changes
 --------------------
 
 #. Create an user account on |the repository service| if you do not already have one.
@@ -272,57 +459,66 @@ package:
    You can also setup breakpoints manually instead of using the ``--pdb`` option.
 
 
-Maintainer tasks
-================
+**Release Process:**
 
-Releases
---------
+For maintainers with PyPI access, follow these steps to release a new version:
 
-.. todo:: This section assumes you are using PyPI to publicly release your package.
+1. **Prepare Release**
 
-   If instead you are using a different/private package index, please update
-   the instructions accordingly.
+   .. code-block:: bash
 
-If you are part of the group of maintainers and have correct user permissions
-on PyPI_, the following steps can be used to release a new version for
-``dist_classicrl``:
+       # Ensure all tests pass
+       pytest tests/
+       bash tests/dist_classicrl/algorithms/runtime/run_runtime_tests.sh
 
-#. Make sure all unit tests are successful.
-#. Tag the current commit on the main branch with a release tag, e.g., ``v1.2.3``.
-#. Push the new tag to the upstream repository_, e.g., ``git push upstream v1.2.3``
-#. Clean up the ``dist`` and ``build`` folders with ``tox -e clean``
-   (or ``rm -rf dist build``)
-   to avoid confusion with old builds and Sphinx docs.
-#. Run ``tox -e build`` and check that the files in ``dist`` have
-   the correct version (no ``.dirty`` or git_ hash) according to the git_ tag.
-   Also check the sizes of the distributions, if they are too big (e.g., >
-   500KB), unwanted clutter may have been accidentally included.
-#. Run ``tox -e publish -- --repository pypi`` and check that everything was
-   uploaded to PyPI_ correctly.
+       # Update version and changelog
+       # Version is managed by setuptools_scm automatically
 
+2. **Create Release Tag**
 
+   .. code-block:: bash
 
-.. [#contrib1] Even though, these resources focus on open source projects and
-   communities, the general ideas behind collaborating with other developers
-   to collectively create software are general and can be applied to all sorts
-   of environments, including private companies and proprietary code bases.
+       git tag v1.2.3
+       git push origin v1.2.3
 
+3. **Build and Upload**
 
-.. <-- start -->
-.. todo:: Please review and change the following definitions:
+   .. code-block:: bash
+
+       # Clean previous builds
+       rm -rf dist/ build/
+
+       # Build distribution
+       python -m build
+
+       # Upload to PyPI (requires API token)
+       python -m twine upload dist/*
+
+**Code Review Process:**
+
+* All changes require review by at least one maintainer
+* Focus on code quality, performance impact, and maintainability
+* Ensure comprehensive test coverage
+* Verify documentation is updated
+
+**Issue Triage:**
+
+* Label issues appropriately (bug, enhancement, documentation, etc.)
+* Assign priority levels (critical, high, medium, low)
+* Link related issues and pull requests
+* Close stale issues after warning period
+
+Links and References
+====================
 
 .. |the repository service| replace:: GitHub
 .. |contribute button| replace:: "Create pull request"
 
-.. _repository: https://github.com/<USERNAME>/dist_classicrl
-.. _issue tracker: https://github.com/<USERNAME>/dist_classicrl/issues
-.. <-- end -->
-
-
+.. _repository: https://github.com/j-moralejo-pinas/dist_classicrl
+.. _issue tracker: https://github.com/j-moralejo-pinas/dist_classicrl/issues
 .. |virtualenv| replace:: ``virtualenv``
 .. |pre-commit| replace:: ``pre-commit``
 .. |tox| replace:: ``tox``
-
 
 .. _black: https://pypi.org/project/black/
 .. _CommonMark: https://commonmark.org/
@@ -348,6 +544,5 @@ on PyPI_, the following steps can be used to release a new version for
 .. _tox: https://tox.wiki/en/stable/
 .. _virtual environment: https://realpython.com/python-virtual-environments-a-primer/
 .. _virtualenv: https://virtualenv.pypa.io/en/stable/
-
 .. _GitHub web interface: https://docs.github.com/en/repositories/working-with-files/managing-files/editing-files
 .. _GitHub's code editor: https://docs.github.com/en/repositories/working-with-files/managing-files/editing-files
