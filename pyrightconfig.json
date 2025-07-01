@@ -1,5 +1,8 @@
 {
   "typeCheckingMode": "basic",
+  "include": [
+    "src"
+  ],
   "exclude": [
     "src/dist_classicrl/old"
   ],
