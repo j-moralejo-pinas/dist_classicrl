@@ -233,6 +233,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
                                 rewards,
                                 terminateds,
                                 actions,
+                                strict=True,
                             )
                         ):
                             prev_states = worker_prev_states[worker_id]
@@ -255,7 +256,9 @@ class DistAsyncQLearning(OptimalQLearningBase):
                             reward,
                             terminated,
                             action,
-                        ) in enumerate(zip(next_states, rewards, terminateds, actions)):
+                        ) in enumerate(
+                            zip(next_states, rewards, terminateds, actions, strict=True)
+                        ):
                             prev_states = worker_prev_states[worker_id]
                             assert not isinstance(prev_states, dict)
                             self.experience_queue.put(
@@ -268,7 +271,9 @@ class DistAsyncQLearning(OptimalQLearningBase):
                                 )
                             )
 
-                for idx, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+                for idx, (terminated, truncated) in enumerate(
+                    zip(terminateds, truncateds, strict=True)
+                ):
                     if terminated or truncated:
                         reward_history.append(worker_rewards[worker_id][idx])
                         worker_rewards[worker_id][idx] = 0
@@ -425,7 +430,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=True)):
                 if terminated or truncated:
                     reward_history.append(agent_rewards[i])
                     agent_rewards[i] = 0
@@ -468,7 +473,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=True)):
                 if terminated or truncated:
                     episode += 1
                     reward_history.append(agent_rewards[i])

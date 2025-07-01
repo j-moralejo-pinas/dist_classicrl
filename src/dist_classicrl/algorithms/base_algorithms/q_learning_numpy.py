@@ -273,7 +273,7 @@ class MultiAgentQLearningNumpy:
         else:
             max_val = 0
             available_actions = []
-            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask)):
+            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask, strict=True)):
                 if mask:
                     if val > max_val:
                         max_val = val
@@ -336,7 +336,7 @@ class MultiAgentQLearningNumpy:
         else:
             max_val = 0
             available_actions = []
-            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask)):
+            for idx, (val, mask) in enumerate(zip(self.q_table[state], action_mask, strict=True)):
                 if mask:
                     if val > max_val:
                         max_val = val
@@ -427,7 +427,7 @@ class MultiAgentQLearningNumpy:
         return np.array(
             [
                 self.choose_action(state, deterministic=deterministic, action_mask=action_mask)
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ]
         )
 
@@ -468,7 +468,7 @@ class MultiAgentQLearningNumpy:
                 self.choose_action_semi_vectorized(
                     state, deterministic=deterministic, action_mask=action_mask
                 )
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ]
         )
 
@@ -509,7 +509,7 @@ class MultiAgentQLearningNumpy:
                 self.choose_action_fully_vectorized(
                     state, deterministic=deterministic, action_mask=action_mask
                 )
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ]
         )
 
@@ -548,7 +548,9 @@ class MultiAgentQLearningNumpy:
                 best_actions_per_state = np.array(
                     [
                         random.choice(np.where(q_value == max_q_value)[0])
-                        for q_value, max_q_value in zip(self.q_table[states], max_q_values)
+                        for q_value, max_q_value in zip(
+                            self.q_table[states], max_q_values, strict=True
+                        )
                     ]
                 )
             else:
@@ -566,7 +568,9 @@ class MultiAgentQLearningNumpy:
                 best_actions_per_state = np.array(
                     [
                         random.choice(np.where(masked_q_value == max_q_value)[0])
-                        for masked_q_value, max_q_value in zip(masked_q_values, max_q_values)
+                        for masked_q_value, max_q_value in zip(
+                            masked_q_values, max_q_values, strict=True
+                        )
                     ]
                 )
             return best_actions_per_state
@@ -581,7 +585,7 @@ class MultiAgentQLearningNumpy:
                 [
                     (random.choice(np.where(q_value == max_q_value)[0]) if not explore_flag else -1)
                     for q_value, max_q_value, explore_flag in zip(
-                        self.q_table[states], max_q_values, explore_flags
+                        self.q_table[states], max_q_values, explore_flags, strict=True
                     )
                 ]
             )
@@ -616,7 +620,7 @@ class MultiAgentQLearningNumpy:
                         else -1
                     )
                     for masked_q_value, max_q_value, explore_flag in zip(
-                        masked_q_values, max_q_values, explore_flags
+                        masked_q_values, max_q_values, explore_flags, strict=True
                     )
                 ]
             )

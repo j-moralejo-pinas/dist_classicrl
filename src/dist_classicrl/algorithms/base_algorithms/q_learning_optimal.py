@@ -338,7 +338,7 @@ class OptimalQLearningBase:
         return np.fromiter(
             (
                 self.choose_masked_action(state, action_mask, deterministic=deterministic)
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ),
             dtype=np.int32,
             count=len(states),
@@ -441,7 +441,7 @@ class OptimalQLearningBase:
         return np.fromiter(
             (
                 self.choose_masked_action_vec(state, action_mask, deterministic=deterministic)
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ),
             dtype=np.int32,
             count=len(states),
@@ -481,7 +481,11 @@ class OptimalQLearningBase:
                         else exploratory_action
                     )
                     for q_value, max_q_value, explore_flag, exploratory_action in zip(
-                        self.q_table[states], max_q_values, explore_flags, exploratory_actions
+                        self.q_table[states],
+                        max_q_values,
+                        explore_flags,
+                        exploratory_actions,
+                        strict=True,
                     )
                 ),
                 dtype=np.int32,
@@ -539,7 +543,7 @@ class OptimalQLearningBase:
                         else random.choice(np.where(mask)[0])
                     )
                     for masked_q_value, max_q_value, mask, explore_flag in zip(
-                        masked_q_values_vec, max_q_values, action_masks, explore_flags
+                        masked_q_values_vec, max_q_values, action_masks, explore_flags, strict=True
                     )
                 ),
                 dtype=np.int32,
@@ -549,7 +553,9 @@ class OptimalQLearningBase:
         return np.fromiter(
             (
                 random.choice(np.where(masked_q_value == max_q_value)[0])
-                for masked_q_value, max_q_value in zip(masked_q_values_vec, max_q_values)
+                for masked_q_value, max_q_value in zip(
+                    masked_q_values_vec, max_q_values, strict=True
+                )
             ),
             dtype=np.int32,
             count=states.size,
@@ -677,12 +683,12 @@ class OptimalQLearningBase:
         """
         if next_action_masks is None:
             for state, action, reward, next_state, term in zip(
-                states, actions, rewards, next_states, terminated
+                states, actions, rewards, next_states, terminated, strict=True
             ):
                 self.single_learn(state, action, reward, next_state, term)
         else:
             for state, action, reward, next_state, term, next_action_mask in zip(
-                states, actions, rewards, next_states, terminated, next_action_masks
+                states, actions, rewards, next_states, terminated, next_action_masks, strict=True
             ):
                 self.single_learn(
                     state,

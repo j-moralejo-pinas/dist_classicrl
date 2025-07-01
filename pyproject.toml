@@ -91,7 +91,7 @@ ignore = [
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
 ]
 select = ["ALL"]
-exclude = ["src/dist_classicrl/old/*", "tests/*"]
+exclude = ["src/dist_classicrl/old/*", "tests/*", "docs/*"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100

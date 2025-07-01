@@ -118,7 +118,9 @@ class MultiAgentQLearningLists:
         list[float]
             Q-values for the state-action pairs.
         """
-        return [self.get_q_value(state, action) for state, action in zip(states, actions)]
+        return [
+            self.get_q_value(state, action) for state, action in zip(states, actions, strict=True)
+        ]
 
     def get_state_q_values(self, state: int) -> list[float]:
         """
@@ -198,7 +200,7 @@ class MultiAgentQLearningLists:
         values : list[float]
             List of Q-values to add.
         """
-        for state, action, value in zip(states, actions, values):
+        for state, action, value in zip(states, actions, values, strict=True):
             self.add_q_value(state, action, value)
 
     def save(self, filename: str) -> None:
@@ -297,7 +299,7 @@ class MultiAgentQLearningLists:
             )
             return [
                 self.choose_action(state, deterministic=deterministic, action_mask=action_mask)
-                for state, action_mask in zip(states, action_masks)
+                for state, action_mask in zip(states, action_masks, strict=True)
             ]
         return [self.choose_action(state, deterministic=deterministic) for state in states]
 
@@ -318,7 +320,9 @@ class MultiAgentQLearningLists:
         next_states : list[int]
             Next states of all agents.
         """
-        for state, action, reward, next_state in zip(states, actions, rewards, next_states):
+        for state, action, reward, next_state in zip(
+            states, actions, rewards, next_states, strict=True
+        ):
             max_next_q_value = max(self.get_state_q_values(next_state))
             target = reward + self.discount_factor * max_next_q_value
             prediction = self.get_q_value(state, action)
