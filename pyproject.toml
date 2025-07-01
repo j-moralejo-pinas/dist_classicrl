@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dist_classicrl"
-description = "A Python package for distributed classical reinforcement learning algorithms."
+description = "A high-performance Python package for distributed classical reinforcement learning algorithms with support for single-threaded, parallel, and MPI-distributed Q-Learning training."
 version = "0.0.0"
 authors = [{ name = "Javier Moralejo Piñas", email = "j.moralejo.pinas@gmail.com" }]
 readme = "README.rst"
