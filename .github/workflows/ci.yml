@@ -44,6 +44,7 @@ jobs:
 
       - name: Docformatter
         run: |
+          set +e
           pdm run docformatter --in-place --recursive src/ --exclude src/dist_classicrl/old/
           code=$?
           if [ "$code" != "0" ] && [ "$code" != "3" ]; then
