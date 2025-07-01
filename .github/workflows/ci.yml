@@ -86,6 +86,11 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Install MPI
+        run: |
+          sudo apt update
+          sudo apt install -y mpich
+
       - name: Install PDM
         run: |
           python -m pip install --upgrade pip
@@ -96,7 +101,9 @@ jobs:
           pdm install -G dev
 
       - name: Run tests
-        run: pdm run pytest --cov=src --cov-report=term-missing
+        run: |
+          export PYTHONPATH=$(pwd)
+          pdm run pytest --cov=src --cov-report=term-missing
 
 #   push:
 #     # Avoid using all the resources/limits available by checking only
