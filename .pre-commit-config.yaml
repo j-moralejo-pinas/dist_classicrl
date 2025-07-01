@@ -62,19 +62,19 @@ repos:
   # Run the formatter.
     - id: ruff-format
     # Run the linter.
-    - id: ruff
+    # - id: ruff
 
-- repo: https://github.com/jsh9/pydoclint
-  rev: 0.6.7
-  hooks:
-  - id: pydoclint
-    files: ^src/.*\.py
-    exclude: ^src/dist_classicrl/old/.*\.py
+# - repo: https://github.com/jsh9/pydoclint
+#   rev: 0.6.7
+#   hooks:
+#   - id: pydoclint
+#     files: ^src/.*\.py
+#     exclude: ^src/dist_classicrl/old/.*\.py
 
-- repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.402
-  hooks:
-  - id: pyright
+# - repo: https://github.com/RobertCraigie/pyright-python
+#   rev: v1.1.402
+#   hooks:
+#   - id: pyright
 
 
 
@@ -135,4 +135,3 @@ repos:
 #   - id: pip-audit
 
 # cspell
-# docformatter

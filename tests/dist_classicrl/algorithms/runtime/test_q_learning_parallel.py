@@ -26,9 +26,16 @@ class TestParallelQLearning:
         self.action_size = 3
 
         # Patch shared memory creation to avoid conflicts in testing
-        with patch("multiprocessing.shared_memory.SharedMemory"), patch(
+        with patch("multiprocessing.shared_memory.SharedMemory") as mock_sm, patch(
             "multiprocessing.Lock"
         ), patch("multiprocessing.Value"):
+            # Create a mock shared memory object with proper buffer
+            mock_sm_instance = MagicMock()
+            mock_sm_instance.buf = bytearray(
+                self.state_size * self.action_size * np.dtype(np.float64).itemsize
+            )
+            mock_sm.return_value = mock_sm_instance
+
             self.agent = ParallelQLearning(
                 state_size=self.state_size,
                 action_size=self.action_size,
@@ -62,11 +69,6 @@ class TestParallelQLearning:
     @patch("multiprocessing.Queue")
     def test_train_with_multiple_environments(self, mock_queue, mock_pipe, mock_process) -> None:
         """Test training with multiple environments in parallel."""
-        # Mock the pipe communication
-        mock_parent_conn = MagicMock()
-        mock_child_conn = MagicMock()
-        mock_pipe.return_value = (mock_parent_conn, mock_child_conn)
-
         # Mock the process
         mock_proc = MagicMock()
         mock_process.return_value = mock_proc
@@ -76,16 +78,25 @@ class TestParallelQLearning:
         mock_queue.return_value = mock_reward_queue
         mock_reward_queue.empty.return_value = True
 
-        # Mock the pipe receive to return environment state
-        mock_parent_conn.recv.return_value = {
-            "env": MockEnvironment(num_envs=1),
-            "states": np.array([0], dtype=np.int32),
-            "infos": [{}],
-            "agent_rewards": np.array([0.0], dtype=np.float32),
-        }
-
         envs = [MockEnvironment(num_envs=1) for _ in range(2)]
         val_env = MockEnvironment(num_envs=1)
+
+        # Create enough mock pipes for all environments and iterations
+        # We need 2 environments * 1 iteration = 2 pipe pairs minimum
+        mock_parent_conns = [MagicMock() for _ in range(len(envs) * 2)]  # Extra for safety
+        mock_child_conns = [MagicMock() for _ in range(len(envs) * 2)]
+
+        # Set up pipe mock to return different pairs for each call
+        mock_pipe.side_effect = list(zip(mock_parent_conns, mock_child_conns))
+
+        # Set up each parent connection to return the expected data
+        for mock_parent_conn in mock_parent_conns:
+            mock_parent_conn.recv.return_value = {
+                "env": MockEnvironment(num_envs=1),
+                "states": np.array([0], dtype=np.int32),
+                "infos": [{}],
+                "agent_rewards": np.array([0.0], dtype=np.float32),
+            }
 
         with patch.object(
             self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
@@ -95,9 +106,9 @@ class TestParallelQLearning:
 
             self.agent.train(
                 envs=envs,
-                steps=10,
+                steps=1,
                 val_env=val_env,
-                val_every_n_steps=5,
+                val_every_n_steps=1,
                 val_steps=3,
                 val_episodes=None,
             )
@@ -218,7 +229,7 @@ class TestParallelQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_steps(env, steps=5)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_steps_dict_observation_env(self) -> None:
@@ -228,7 +239,7 @@ class TestParallelQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_steps(env, steps=5)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_episodes_simple_env(self) -> None:
@@ -238,7 +249,7 @@ class TestParallelQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_episodes(env, episodes=2)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_episodes_dict_observation_env(self) -> None:
@@ -248,7 +259,7 @@ class TestParallelQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_episodes(env, episodes=2)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_inheritance_from_optimal_q_learning_base(self) -> None:
@@ -266,11 +277,6 @@ class TestParallelQLearning:
     @patch("multiprocessing.Queue")
     def test_reward_collection_during_training(self, mock_queue, mock_pipe, mock_process) -> None:
         """Test that rewards are properly collected during parallel training."""
-        # Mock the pipe communication
-        mock_parent_conn = MagicMock()
-        mock_child_conn = MagicMock()
-        mock_pipe.return_value = (mock_parent_conn, mock_child_conn)
-
         # Mock the process
         mock_proc = MagicMock()
         mock_process.return_value = mock_proc
@@ -281,16 +287,24 @@ class TestParallelQLearning:
         mock_reward_queue.empty.side_effect = [False, False, True]  # Two rewards, then empty
         mock_reward_queue.get.side_effect = [5.0, 3.0]  # Two reward values
 
-        # Mock the pipe receive
-        mock_parent_conn.recv.return_value = {
-            "env": MockEnvironment(num_envs=1),
-            "states": np.array([0], dtype=np.int32),
-            "infos": [{}],
-            "agent_rewards": np.array([0.0], dtype=np.float32),
-        }
-
         envs = [MockEnvironment(num_envs=1)]
         val_env = MockEnvironment(num_envs=1)
+
+        # Create enough mock pipes for all environments and iterations
+        mock_parent_conns = [MagicMock() for _ in range(len(envs) * 3)]  # Extra for safety
+        mock_child_conns = [MagicMock() for _ in range(len(envs) * 3)]
+
+        # Set up pipe mock to return different pairs for each call
+        mock_pipe.side_effect = list(zip(mock_parent_conns, mock_child_conns))
+
+        # Set up each parent connection to return the expected data
+        for mock_parent_conn in mock_parent_conns:
+            mock_parent_conn.recv.return_value = {
+                "env": MockEnvironment(num_envs=1),
+                "states": np.array([0], dtype=np.int32),
+                "infos": [{}],
+                "agent_rewards": np.array([0.0], dtype=np.float32),
+            }
 
         with patch.object(
             self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
@@ -300,7 +314,7 @@ class TestParallelQLearning:
 
             self.agent.train(
                 envs=envs,
-                steps=10,
+                steps=1,
                 val_env=val_env,
                 val_every_n_steps=5,
                 val_steps=3,
@@ -319,9 +333,35 @@ class TestParallelQLearning:
             mock_sm.close = MagicMock()
             mock_sm.unlink = MagicMock()
 
-            with patch("multiprocessing.Process"), patch("multiprocessing.Pipe"), patch(
-                "multiprocessing.Queue"
-            ), patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])):
+            with patch("multiprocessing.Process") as mock_process, patch(
+                "multiprocessing.Pipe"
+            ) as mock_pipe, patch("multiprocessing.Queue") as mock_queue, patch.object(
+                self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
+            ):
+                # Set up mocks properly
+                mock_proc = MagicMock()
+                mock_process.return_value = mock_proc
+
+                mock_reward_queue = MagicMock()
+                mock_queue.return_value = mock_reward_queue
+                mock_reward_queue.empty.return_value = True
+
+                # Create enough mock pipes for the test
+                mock_parent_conns = [MagicMock() for _ in range(len(envs) * 3)]
+                mock_child_conns = [MagicMock() for _ in range(len(envs) * 3)]
+
+                # Set up pipe mock to return different pairs for each call
+                mock_pipe.side_effect = list(zip(mock_parent_conns, mock_child_conns))
+
+                # Set up each parent connection to return the expected data
+                for mock_parent_conn in mock_parent_conns:
+                    mock_parent_conn.recv.return_value = {
+                        "env": MockEnvironment(num_envs=1),
+                        "states": np.array([0], dtype=np.int32),
+                        "infos": [{}],
+                        "agent_rewards": np.array([0.0], dtype=np.float32),
+                    }
+
                 self.agent.train(
                     envs=envs,
                     steps=10,

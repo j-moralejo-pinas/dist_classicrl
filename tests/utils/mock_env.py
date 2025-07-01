@@ -20,7 +20,7 @@ class MockEnvironment(DistClassicRLEnv):
         self._max_steps = 10
 
     def step(
-        self,
+        self, actions
     ) -> tuple[
         np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]],
         np.typing.NDArray[np.float32],
@@ -47,7 +47,7 @@ class MockEnvironment(DistClassicRLEnv):
         return next_states, rewards, terminated, truncated, infos
 
     def reset(
-        self,
+        self, seed=None
     ) -> tuple[
         np.typing.NDArray[np.int32] | dict[str, np.typing.NDArray[np.int32]], list[dict[str, Any]]
     ]:

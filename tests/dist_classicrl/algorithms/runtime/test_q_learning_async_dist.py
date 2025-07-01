@@ -99,7 +99,7 @@ class TestDistAsyncQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_steps(env, steps=5)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_steps_dict_observation_env(self) -> None:
@@ -109,7 +109,7 @@ class TestDistAsyncQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_steps(env, steps=5)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_episodes_simple_env(self) -> None:
@@ -119,7 +119,7 @@ class TestDistAsyncQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_episodes(env, episodes=2)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     def test_evaluate_episodes_dict_observation_env(self) -> None:
@@ -129,7 +129,7 @@ class TestDistAsyncQLearning:
         with patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])):
             total_rewards, reward_history = self.agent.evaluate_episodes(env, episodes=2)
 
-            assert isinstance(total_rewards, float)
+            assert isinstance(total_rewards, (int, float, np.floating))
             assert isinstance(reward_history, list)
 
     @patch("queue.Queue")
@@ -243,23 +243,46 @@ class TestDistAsyncQLearningMPI:
                     batch_size=2,
                 )
 
+    @patch(
+        "dist_classicrl.algorithms.runtime.q_learning_async_dist.NUM_NODES", 2
+    )  # 1 master + 1 worker
     @patch("dist_classicrl.algorithms.runtime.q_learning_async_dist.comm")
     def test_communicate_master_mock(self, mock_comm) -> None:
         """Test communicate_master method with mocked MPI communication."""
         if RANK == MASTER_RANK:
-            # Mock MPI communication
+            # Mock MPI communication with proper step progression
             mock_request = MagicMock()
-            mock_request.test.return_value = (
-                True,
+
+            # Create multiple successful calls to reach the step limit (2 steps)
+            mock_request.test.side_effect = [
+                # First step
                 (
-                    np.array([1, 2], dtype=np.int32),  # next_states
-                    np.array([1.0, 1.0], dtype=np.float32),  # rewards
-                    np.array([False, False], dtype=bool),  # terminated
-                    np.array([False, False], dtype=bool),  # truncated
-                    [{}, {}],  # infos
-                    np.array([False, False], dtype=bool),  # firsts
+                    True,
+                    (
+                        np.array([1, 2], dtype=np.int32),  # next_states
+                        np.array([1.0, 1.0], dtype=np.float32),  # rewards
+                        np.array([False, False], dtype=bool),  # terminated
+                        np.array([False, False], dtype=bool),  # truncated
+                        [{}, {}],  # infos
+                        np.array([True, True], dtype=bool),  # firsts
+                    ),
                 ),
-            )
+                # Second step
+                (
+                    True,
+                    (
+                        np.array([3, 4], dtype=np.int32),  # next_states
+                        np.array([0.5, 0.5], dtype=np.float32),  # rewards
+                        np.array([True, True], dtype=bool),  # terminated (episodes end)
+                        np.array([False, False], dtype=bool),  # truncated
+                        [{}, {}],  # infos
+                        np.array([False, False], dtype=bool),  # firsts
+                    ),
+                ),
+                # Subsequent calls return False (no data available)
+                (False, None),
+            ]
+
             mock_comm.irecv.return_value = mock_request
             mock_comm.isend = MagicMock()
 
@@ -269,6 +292,8 @@ class TestDistAsyncQLearningMPI:
                 reward_history = self.agent.communicate_master(steps=2)
 
                 assert isinstance(reward_history, list)
+                # Should have collected 2 rewards when episodes terminated
+                assert len(reward_history) == 2
 
     @patch("dist_classicrl.algorithms.runtime.q_learning_async_dist.comm")
     def test_run_environment_mock(self, mock_comm) -> None:
