@@ -43,7 +43,12 @@ jobs:
           args: format .
 
       - name: Docformatter
-        run: pdm run docformatter --in-place --recursive src/ --exclude src/dist_classicrl/old/
+        run: |
+          pdm run docformatter --in-place --recursive src/ --exclude src/dist_classicrl/old/
+          code=$?
+          if [ "$code" != "0" ] && [ "$code" != "3" ]; then
+            exit $code
+          fi
 
       - name: Ruff Check
         uses: chartboost/ruff-action@v1
