@@ -58,4 +58,4 @@ MANIFEST
 dev_tests/*
 
 # PyRight Local Config
-pyrightconfig.local.json
+# pyrightconfig.local.json
