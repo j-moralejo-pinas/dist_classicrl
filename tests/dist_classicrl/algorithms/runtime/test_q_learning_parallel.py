@@ -26,9 +26,11 @@ class TestParallelQLearning:
         self.action_size = 3
 
         # Patch shared memory creation to avoid conflicts in testing
-        with patch("multiprocessing.shared_memory.SharedMemory") as mock_sm, patch(
-            "multiprocessing.Lock"
-        ), patch("multiprocessing.Value"):
+        with (
+            patch("multiprocessing.shared_memory.SharedMemory") as mock_sm,
+            patch("multiprocessing.Lock"),
+            patch("multiprocessing.Value"),
+        ):
             # Create a mock shared memory object with proper buffer
             mock_sm_instance = MagicMock()
             mock_sm_instance.buf = bytearray(
@@ -98,9 +100,10 @@ class TestParallelQLearning:
                 "agent_rewards": np.array([0.0], dtype=np.float32),
             }
 
-        with patch.object(
-            self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
-        ), patch.object(self.agent, "sm") as mock_sm:
+        with (
+            patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])),
+            patch.object(self.agent, "sm") as mock_sm,
+        ):
             mock_sm.close = MagicMock()
             mock_sm.unlink = MagicMock()
 
@@ -179,9 +182,10 @@ class TestParallelQLearning:
         mock_shared_memory.return_value = mock_sm
         mock_sm.buf = bytearray(self.agent.q_table.nbytes)
 
-        with patch.object(
-            self.agent, "choose_actions", return_value=np.array([0, 1])
-        ), patch.object(self.agent, "learn"):
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])),
+            patch.object(self.agent, "learn"),
+        ):
             self.agent.run_steps(
                 env=env,
                 num_steps=3,
@@ -210,9 +214,10 @@ class TestParallelQLearning:
         mock_shared_memory.return_value = mock_sm
         mock_sm.buf = bytearray(self.agent.q_table.nbytes)
 
-        with patch.object(
-            self.agent, "choose_actions", return_value=np.array([0, 1])
-        ), patch.object(self.agent, "learn"):
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0, 1])),
+            patch.object(self.agent, "learn"),
+        ):
             self.agent.run_steps(
                 env=env,
                 num_steps=3,
@@ -306,9 +311,10 @@ class TestParallelQLearning:
                 "agent_rewards": np.array([0.0], dtype=np.float32),
             }
 
-        with patch.object(
-            self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
-        ), patch.object(self.agent, "sm") as mock_sm:
+        with (
+            patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])),
+            patch.object(self.agent, "sm") as mock_sm,
+        ):
             mock_sm.close = MagicMock()
             mock_sm.unlink = MagicMock()
 
@@ -333,10 +339,11 @@ class TestParallelQLearning:
             mock_sm.close = MagicMock()
             mock_sm.unlink = MagicMock()
 
-            with patch("multiprocessing.Process") as mock_process, patch(
-                "multiprocessing.Pipe"
-            ) as mock_pipe, patch("multiprocessing.Queue") as mock_queue, patch.object(
-                self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
+            with (
+                patch("multiprocessing.Process") as mock_process,
+                patch("multiprocessing.Pipe") as mock_pipe,
+                patch("multiprocessing.Queue") as mock_queue,
+                patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])),
             ):
                 # Set up mocks properly
                 mock_proc = MagicMock()

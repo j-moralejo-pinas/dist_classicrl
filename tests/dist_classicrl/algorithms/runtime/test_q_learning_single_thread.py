@@ -55,9 +55,10 @@ class TestSingleThreadQLearning:
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
         # Mock the choose_actions and learn methods to avoid randomness
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
-            self.agent, "learn"
-        ) as mock_learn:
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0])),
+            patch.object(self.agent, "learn") as mock_learn,
+        ):
             self.agent.train(
                 env=env,
                 steps=5,
@@ -76,9 +77,10 @@ class TestSingleThreadQLearning:
         val_env = MockEnvironment(num_envs=1, return_dict=True)
 
         # Mock the choose_actions and learn methods
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
-            self.agent, "learn"
-        ) as mock_learn:
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0])),
+            patch.object(self.agent, "learn") as mock_learn,
+        ):
             self.agent.train(
                 env=env,
                 steps=5,
@@ -96,8 +98,9 @@ class TestSingleThreadQLearning:
         env = MockEnvironment(num_envs=1, return_dict=False)
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(self.agent, "choose_actions", return_value=np.array([0])), patch.object(
-            self.agent, "learn"
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0])),
+            patch.object(self.agent, "learn"),
         ):
             self.agent.train(
                 env=env,
@@ -186,9 +189,10 @@ class TestSingleThreadQLearning:
 
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(
-            self.agent, "choose_actions", return_value=np.array([0, 1, 2])
-        ), patch.object(self.agent, "learn"):
+        with (
+            patch.object(self.agent, "choose_actions", return_value=np.array([0, 1, 2])),
+            patch.object(self.agent, "learn"),
+        ):
             self.agent.train(
                 env=mock_env,
                 steps=5,

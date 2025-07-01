@@ -1,5 +1,10 @@
 {
   "typeCheckingMode": "basic",
-  "venvPath": "/home/linuxjavier/micromamba/envs",
-  "venv": "dist-rl"
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/dist_classicrl/old"
+  ],
+  "extends": "./pyrightconfig.local.json"
 }

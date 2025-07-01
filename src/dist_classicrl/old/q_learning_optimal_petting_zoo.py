@@ -12,9 +12,8 @@ if TYPE_CHECKING:
 
 class OptimalQLearningBase:
     """
-    Base Q-learning class that implements the Q-learning algorithm
-    in different ways for different scenarios, giving the best performance
-    at each case.
+    Base Q-learning class that implements the Q-learning algorithm in different ways for different
+    scenarios, giving the best performance at each case.
 
     Attributes
     ----------

@@ -148,9 +148,11 @@ class TestDistAsyncQLearning:
 
         val_env = MockEnvironment(num_envs=1, return_dict=False)
 
-        with patch.object(self.agent, "learn"), patch.object(
-            self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])
-        ), patch("builtins.print"):
+        with (
+            patch.object(self.agent, "learn"),
+            patch.object(self.agent, "evaluate_steps", return_value=(5.0, [2.0, 3.0])),
+            patch("builtins.print"),
+        ):
             # This should exit quickly due to our mocked None
             self.agent.update_q_table(
                 val_env=val_env, val_every_n_steps=5, val_steps=2, val_episodes=None

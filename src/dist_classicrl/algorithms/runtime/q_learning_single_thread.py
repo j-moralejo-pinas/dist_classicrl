@@ -117,7 +117,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
                 self.learn(states, actions, rewards, next_states, terminateds)
             states = next_states
 
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     reward_history.append(agent_rewards[i])
                     agent_rewards[i] = 0
@@ -171,7 +171,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     reward_history.append(agent_rewards[i])
                     agent_rewards[i] = 0
@@ -214,7 +214,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     episode += 1
                     reward_history.append(agent_rewards[i])

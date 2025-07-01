@@ -15,7 +15,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.13"
 dependencies = [
     "gymnasium",
     "mpi4py",
@@ -41,7 +41,7 @@ version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
 
 [project.optional-dependencies]
-dev = ["pytest", "pyright", "pre-commit", "ruff", "pydoclint", "docformatter", "pytest", "pytest-cov"] # , "isort", "black"
+dev = ["pytest", "pyright", "pre-commit", "ruff", "pydoclint", "docformatter", "pytest", "pytest-cov", "pyupgrade"] # , "isort", "black"
 docs = ["sphinx", "sphinx-autoapi", "sphinx_rtd_theme", "sphinxcontrib-napoleon"]
 
 [tool.pytest.ini_options]
@@ -91,7 +91,7 @@ ignore = [
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
 ]
 select = ["ALL"]
-exclude = ["src/dist_classicrl/old/*", "tests/*"]
+exclude = ["src/dist_classicrl/old/*", "tests/*", "docs/*"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100
