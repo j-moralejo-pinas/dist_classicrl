@@ -15,8 +15,8 @@ class DummyPettingZooEnv:
     """
     Dummy PettingZoo environment for testing the PettingZooVectorWrapper.
 
-    This class simulates a simple multi-agent environment with two agents
-    and structured observations/actions containing 'observation' and 'action_mask' keys.
+    This class simulates a simple multi-agent environment with two agents and structured
+    observations/actions containing 'observation' and 'action_mask' keys.
     """
 
     def __init__(self) -> None:
@@ -295,8 +295,8 @@ def test_pettingzoo_vector_wrapper() -> None:
     """
     Test function for the PettingZooVectorWrapper.
 
-    Creates a dummy environment, wraps it, and tests the reset and step functionality
-    to ensure the wrapper correctly converts between dict-based and vectorized APIs.
+    Creates a dummy environment, wraps it, and tests the reset and step functionality to ensure the
+    wrapper correctly converts between dict-based and vectorized APIs.
     """
     # Create the dummy environment and wrap it.
     dummy_env = DummyPettingZooEnv()

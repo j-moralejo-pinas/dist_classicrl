@@ -495,7 +495,7 @@ class OptimalQLearningBase:
         return np.fromiter(
             (
                 random.choice(np.where(q_value == max_q_value)[0])
-                for q_value, max_q_value in zip(self.q_table[states], max_q_values)
+                for q_value, max_q_value in zip(self.q_table[states], max_q_values, strict=False)
             ),
             dtype=np.int32,
             count=states.size,

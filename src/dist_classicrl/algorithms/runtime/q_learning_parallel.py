@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 from multiprocessing import Value, connection, shared_memory
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -15,6 +15,7 @@ from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from multiprocessing.sharedctypes import Synchronized
     from multiprocessing.synchronize import Lock
 
@@ -143,7 +144,7 @@ class ParallelQLearning(OptimalQLearningBase):
             for step in range(0, steps, val_every_n_steps):
                 curr_states_pipe_list = []
                 process_list = []
-                for env, curr_state in zip(envs, curr_states):
+                for env, curr_state in zip(envs, curr_states, strict=False):
                     parent_conn, child_conn = mp.Pipe()
                     curr_states_pipe_list.append(parent_conn)
                     p = mp.Process(
@@ -166,7 +167,7 @@ class ParallelQLearning(OptimalQLearningBase):
                 curr_states = []
                 envs = []
 
-                for p, curr_states_pipe in zip(process_list, curr_states_pipe_list):
+                for p, curr_states_pipe in zip(process_list, curr_states_pipe_list, strict=False):
                     curr_state = curr_states_pipe.recv()
                     envs.append(curr_state["env"])
                     curr_state.pop("env")
@@ -267,7 +268,7 @@ class ParallelQLearning(OptimalQLearningBase):
                     self.learn(states, actions, rewards, next_states, terminateds)
             states = next_states
 
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     rewards_queue.put(agent_rewards[i])
                     agent_rewards[i] = 0
@@ -314,7 +315,7 @@ class ParallelQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     reward_history.append(agent_rewards[i])
                     agent_rewards[i] = 0
@@ -357,7 +358,7 @@ class ParallelQLearning(OptimalQLearningBase):
             next_states, rewards, terminateds, truncateds, infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds)):
+            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
                 if terminated or truncated:
                     episode += 1
                     reward_history.append(agent_rewards[i])
