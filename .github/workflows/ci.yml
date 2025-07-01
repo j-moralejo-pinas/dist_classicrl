@@ -57,7 +57,7 @@ jobs:
           args: check .
 
       - name: Pyright
-        runs: pdm run pyright
+        run: pdm run pyright
 
       - name: Commit formatting changes
         run: |
