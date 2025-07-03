@@ -76,7 +76,9 @@ repos:
 #   hooks:
 #   - id: pyright
 
-
+##########################################
+## Everything below this line is unused ##
+##########################################
 
 # - repo: https://github.com/pre-commit/mirrors-pylint
 #   rev: v3.0.0a5  # Use latest stable Pylint
