@@ -5,23 +5,9 @@ Installation
 Requirements
 ============
 
-**System Requirements:**
+- ``MPI`` - For distributed training (optional)
 
-- Python 3.8 or higher
-- Operating System: Linux, macOS, or Windows
-- Memory: At least 4GB RAM (more for large-scale training)
-- CPU: Multi-core recommended for parallel training
-
-**Core Dependencies:**
-
-- NumPy >= 1.20.0
-- Gymnasium >= 1.0.0
-
-**Optional Dependencies:**
-
-- ``mpi4py`` - For distributed training with MPI
-- ``pytest`` - For running tests
-- ``sphinx`` - For building documentation
+To install MPI, follow the instructions below based on your operating system.
 
 Installation Methods
 ===================
@@ -54,7 +40,15 @@ For development with all optional dependencies:
 
     pip install -e ".[dev]"
 
-This includes testing, documentation, and code quality tools.
+This includes testing, and code quality tools.
+
+For building documentation locally:
+
+.. code-block:: bash
+
+    pip install -e ".[docs]"
+
+
 
 MPI Support (Optional)
 ======================
@@ -139,79 +133,6 @@ Test MPI Installation (if installed):
     # Test distributed Q-learning
     mpirun -n 2 python -c "from dist_classicrl.algorithms.runtime.q_learning_async_dist import DistAsyncQLearning; print('✓ Distributed Q-learning available')"
 
-Common Issues
-=============
-
-Import Errors
--------------
-
-If you encounter import errors:
-
-.. code-block:: bash
-
-    # Reinstall with no cache
-    pip uninstall dist_classicrl
-    pip install --no-cache-dir dist_classicrl
-
-MPI Issues
-----------
-
-**"mpi4py not found":**
-
-Ensure MPI is properly installed before installing mpi4py:
-
-.. code-block:: bash
-
-    # Check MPI installation
-    which mpirun
-    mpirun --version
-
-    # Reinstall mpi4py
-    pip uninstall mpi4py
-    pip install mpi4py
-
-**MPI version conflicts:**
-
-If you have multiple MPI implementations:
-
-.. code-block:: bash
-
-    # Check which MPI implementation is being used
-    python -c "from mpi4py import MPI; print(MPI.Get_library_version())"
-
-**Permission errors on Linux:**
-
-Some systems require additional setup for MPI:
-
-.. code-block:: bash
-
-    # Add to ~/.bashrc or ~/.profile
-    export OMPI_ALLOW_RUN_AS_ROOT=1
-    export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-
-Performance Issues
-------------------
-
-**Slow imports:**
-
-If imports are slow, check for network-mounted filesystems or antivirus software.
-
-**Memory errors with large Q-tables:**
-
-Consider using sparse representations or reducing state space size:
-
-.. code-block:: python
-
-    # Use numpy with appropriate dtype
-    import numpy as np
-
-    # For smaller Q-tables, use float32 instead of float64
-    agent = SingleThreadQLearning(
-        state_size=1000,
-        action_size=10,
-        q_table_dtype=np.float32  # Reduces memory usage
-    )
-
 Virtual Environments
 ===================
 
@@ -229,7 +150,7 @@ We strongly recommend using virtual environments:
 
 .. code-block:: bash
 
-    conda create -n dist_classicrl python=3.9
+    conda create -n dist_classicrl python=3.13
     conda activate dist_classicrl
     pip install dist_classicrl
 
