@@ -9,10 +9,8 @@ Maintainers
 
 * **Javier Moralejo Piñas** <j.moralejo.pinas@gmail.com>
 
-  * Project creator and lead maintainer
-  * Core algorithm implementations
-  * Distributed training architecture
-  * Performance optimization
+  * Project creator and maintainer
+
 
 Contributors
 ============
@@ -43,6 +41,4 @@ to new features and performance optimizations!
 Special Thanks
 ==============
 
-* The PyScaffold team for the excellent project template
-* The open source community for inspiration and guidance
-* Early users and testers who helped identify issues and improvements
+* *This section will be updated in the future.*

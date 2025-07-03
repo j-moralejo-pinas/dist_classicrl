@@ -7,9 +7,6 @@
 .. image:: https://img.shields.io/badge/python-3.8+-blue.svg
     :alt: Python Version
     :target: https://www.python.org/downloads/
-.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-    :alt: Project generated with PyScaffold
-    :target: https://pyscaffold.org/
 
 |
 
@@ -27,8 +24,7 @@ A Python package for distributed classical reinforcement learning algorithms.
 - ⚡ **High Performance**: Optimized implementations with vectorized operations and performance benchmarking
 - 🎮 **Multi-Agent Support**: Built-in support for multi-agent environments
 - 🔧 **Flexible Architecture**: Abstract base classes for easy extension and custom environments
-- 🧪 **Comprehensive Testing**: Extensive test suite with performance profiling
-- 🌐 **Standards Compliant**: Compatible with Gymnasium and PettingZoo environments
+- 🌐 **Standards Compliant**: Compatible with Gymnasium and PettingZoo environments (coming soon)
 
 
 Installation
@@ -263,28 +259,6 @@ Or use the provided test runner:
 
     bash tests/dist_classicrl/algorithms/runtime/run_runtime_tests.sh
 
-Requirements
-============
-
-**Core Dependencies:**
-
-- Python 3.8+
-- NumPy >= 1.20.0
-- Gymnasium >= 1.0.0
-
-**Optional Dependencies:**
-
-- ``mpi4py`` - For distributed training with MPI
-- ``pytest`` - For running tests
-- ``sphinx`` - For building documentation
-
-**Development Dependencies:**
-
-- ``pre-commit`` - Code quality hooks
-- ``ruff`` - Fast Python linter and formatter
-- ``pytest-cov`` - Test coverage reporting
-- ``pyright`` - Static type checker
-
 Contributing
 ============
 
@@ -314,7 +288,6 @@ This project is licensed under the MIT License - see the `LICENSE.txt <LICENSE.t
 Acknowledgments
 ===============
 
-- Built with `PyScaffold <https://pyscaffold.org/>`_ for project structure
 - Inspired by classical reinforcement learning research
 - Performance optimization techniques from high-performance computing literature
 
@@ -325,15 +298,10 @@ Roadmap
 
 - Experience replay buffers
 - Additional RL algorithms (SARSA, Expected SARSA)
-- Deep Q-Learning integration
-- Enhanced multi-agent coordination
 - Improved stability for large-scale distributed training
 
 **Known Issues:**
 
 - Large numbers of vectorized environments may cause training instability
-- MPI performance varies significantly across different network configurations
 
 For detailed version history, see `CHANGELOG.rst <CHANGELOG.rst>`_.
-
-.. _pyscaffold-notes:
