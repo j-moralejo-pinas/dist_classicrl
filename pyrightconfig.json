@@ -6,5 +6,8 @@
   "exclude": [
     "src/dist_classicrl/old"
   ],
+  "extraPaths": [
+    "src"
+  ],
   "extends": "./pyrightconfig.local.json"
 }
