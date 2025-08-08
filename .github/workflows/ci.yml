@@ -42,6 +42,12 @@ jobs:
             ! -path "src/dist_classicrl/old/*" \
             -exec pdm run pyupgrade --py38-plus --exit-zero-even-if-changed {} +
 
+      - name: Ruff Auto-Fix
+        uses: chartboost/ruff-action@v1
+        with:
+          args: check . --fix > /dev/null 2>&1
+        continue-on-error: true
+
       - name: Ruff Format Check
         uses: chartboost/ruff-action@v1
         with:

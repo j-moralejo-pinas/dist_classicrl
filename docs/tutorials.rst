@@ -363,63 +363,6 @@ Step 3: Visualize Agent's Policy
 
 **Expected Output**: The agent should learn to navigate toward the goal efficiently.
 
-Tutorial 5: Performance Optimization
-=====================================
-
-Learn how to optimize training performance for large-scale problems.
-
-**Goal**: Understand performance considerations and optimization techniques.
-
-Performance Monitoring
-----------------------
-
-.. code-block:: python
-
-    import time
-
-    def benchmark_training(agent_class, env_factory, steps=10000):
-        """Benchmark training performance."""
-        env = env_factory()
-        agent = agent_class(state_size=512, action_size=9)
-
-        start_time = time.time()
-        agent.train(env=env, steps=steps)
-        end_time = time.time()
-
-        elapsed = end_time - start_time
-        steps_per_second = steps / elapsed
-
-        print(f"{agent_class.__name__}:")
-        print(f"  Time: {elapsed:.2f} seconds")
-        print(f"  Performance: {steps_per_second:.1f} steps/second")
-        return steps_per_second
-
-    # Compare different implementations
-    single_perf = benchmark_training(SingleThreadQLearning, TicTacToeEnv)
-    # parallel_perf = benchmark_training(ParallelQLearning, TicTacToeEnv)
-
-    # print(f"Parallel speedup: {parallel_perf / single_perf:.2f}x")
-
-Memory Optimization
-------------------
-
-.. code-block:: python
-
-    import psutil
-    import os
-
-    def monitor_memory_usage():
-        """Monitor memory usage during training."""
-        process = psutil.Process(os.getpid())
-        return process.memory_info().rss / 1024 / 1024  # MB
-
-    # Example: Monitor memory during training
-    print(f"Initial memory: {monitor_memory_usage():.1f} MB")
-
-    # Train with memory monitoring
-    agent = SingleThreadQLearning(state_size=1000, action_size=10)
-    print(f"After agent creation: {monitor_memory_usage():.1f} MB")
-
 Next Steps
 ==========
 
@@ -433,10 +376,7 @@ After completing these tutorials, you should be able to:
 
 **What's Next?**
 
-- Explore :doc:`user_guide/algorithms` for advanced algorithm details
-- Check :doc:`user_guide/performance` for detailed optimization guides
 - See :doc:`autoapi/index` for complete API documentation
-- Read :doc:`user_guide/distributed` for advanced distributed training techniques
 
 **Need Help?**
 

@@ -8,7 +8,7 @@ dist_classicrl
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
     :alt: License
     :target: https://github.com/j-moralejo-pinas/dist_classicrl/blob/main/LICENSE.txt
-.. image:: https://img.shields.io/badge/python-3.8+-blue.svg
+.. image:: https://img.shields.io/badge/python-3.13+-blue.svg
     :alt: Python Version
 
 **A high-performance Python package for distributed classical reinforcement learning**
@@ -61,17 +61,12 @@ Key Features
 
 🎮 **Multi-Agent Support**
     - Built-in support for multi-agent environments
-    - Compatible with Gymnasium and PettingZoo
+    - Compatible with Gymnasium and PettingZoo (coming soon)
 
 🔧 **Flexible Architecture**
     - Abstract base classes for easy extension
     - Modular design for algorithm composition
     - Custom environment support
-
-🧪 **Comprehensive Testing**
-    - Extensive test suite with >90% coverage
-    - Performance regression testing
-    - MPI integration testing
 
 Documentation Sections
 =======================
@@ -173,7 +168,7 @@ The library includes extensive performance optimizations:
 - **Vectorized Operations**: Up to 10x speedup for large action spaces
 - **Memory Efficiency**: Optimized Q-table storage and access patterns
 - **Parallel Scaling**: Near-linear speedup with multiple CPU cores
-- **Distributed Scaling**: Tested on clusters with 100+ nodes
+- **Distributed Scaling**: Efficient MPI communication patterns for large-scale training
 
 Algorithm Implementations
 =========================
@@ -181,8 +176,8 @@ Algorithm Implementations
 **Q-Learning Variants:**
 
 - **Optimal Q-Learning**: Base implementation with multiple optimization strategies
-- **List-based Q-Learning**: Memory-efficient for sparse state spaces
-- **NumPy Q-Learning**: Vectorized operations for dense state spaces
+- **List-based Q-Learning**: List based Q-table for small state spaces
+- **NumPy Q-Learning**: Vectorized Q-table using NumPy for large state spaces
 
 **Execution Modes:**
 
@@ -202,7 +197,6 @@ Support and Community
 - **GitHub Issues**: `Report bugs and request features <https://github.com/j-moralejo-pinas/dist_classicrl/issues>`_
 - **Documentation**: You're reading it! 📖
 - **Contributing**: See :doc:`contributing` for how to get involved
-- **Performance**: Check out :doc:`user_guide/performance` for optimization tips
 
 The dist_classicrl project welcomes contributions from the community. Whether you're fixing bugs,
 adding features, improving documentation, or sharing your use cases, we'd love to hear from you!
