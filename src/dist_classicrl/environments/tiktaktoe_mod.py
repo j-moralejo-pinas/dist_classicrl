@@ -68,6 +68,7 @@ class TicTacToeEnv(gym.Env):
         self,
         *,
         seed: int | None = None,
+        options: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         """
         Reset the environment to an initial state.

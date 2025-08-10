@@ -346,7 +346,7 @@ class TestOptimalQLearningBase:
     def test_update_explore_rate(self) -> None:
         """Test exploration rate decay."""
         initial_rate = self.agent.exploration_rate
-        self.agent.update_explore_rate()
+        self.agent.update_exploration_rate()
 
         expected_rate = max(
             self.agent.min_exploration_rate, initial_rate * self.agent.exploration_decay
@@ -357,7 +357,7 @@ class TestOptimalQLearningBase:
     def test_update_explore_rate_minimum(self) -> None:
         """Test exploration rate doesn't go below minimum."""
         self.agent.exploration_rate = self.agent.min_exploration_rate
-        self.agent.update_explore_rate()
+        self.agent.update_exploration_rate()
 
         assert self.agent.exploration_rate == self.agent.min_exploration_rate
 

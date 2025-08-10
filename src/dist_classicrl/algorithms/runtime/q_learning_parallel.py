@@ -48,6 +48,10 @@ class ParallelQLearning(OptimalQLearningBase):
         Size of the action space.
     learning_rate : float
         Learning rate for Q-learning.
+    learning_rate_decay : float
+        Decay rate for learning rate.
+    min_learning_rate : float
+        Minimum learning rate.
     discount_factor : float
         Discount factor for future rewards.
     exploration_rate : float
@@ -69,9 +73,12 @@ class ParallelQLearning(OptimalQLearningBase):
     num_agents: int
     state_size: int
     action_size: int
-    learning_rate: float
+    learning_rate: Synchronized
+    learning_rate_decay: float
+    min_learning_rate: float
+    _learning_rate: Synchronized
     discount_factor: float
-    exploration_rate: float
+    exploration_rate: Synchronized
     _exploration_rate: Synchronized
     exploration_decay: float
     min_exploration_rate: float
@@ -82,26 +89,45 @@ class ParallelQLearning(OptimalQLearningBase):
     sm_name: str = "q_table"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.exploration_rate = Value("f", 0.0)
+        self.learning_rate = Value("f", 0.0)
         super().__init__(*args, **kwargs)
-        self.sm = shared_memory.SharedMemory(
-            name=self.sm_name, create=True, size=self.q_table.nbytes
-        )
-        self.q_table = np.ndarray(self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf)
         self.sm_lock = mp.Lock()
-        self._exploration_rate = Value("f", self.exploration_rate)
 
-    def update_explore_rate(self) -> None:
+    def get_exploration_rate(self) -> float:
         """
-        Update the exploration rate.
+        Get the current exploration rate.
 
-        This method overrides the base class method to ensure thread safety when updating the
-        exploration rate in a multi-agent setting.
+        This method retrieves the current exploration rate from the synchronized value.
         """
-        self._exploration_rate.value = max(
-            self._exploration_rate.value * self.exploration_decay,
-            self.min_exploration_rate,
-        )
-        self.exploration_rate = self._exploration_rate.value
+        return self.exploration_rate.value
+
+    def set_exploration_rate(self, rate: float) -> None:
+        """
+        Set the exploration rate.
+
+        This method sets the exploration rate in a thread-safe manner.
+        """
+        self.exploration_rate.value = rate
+
+    def get_learning_rate(self) -> float:
+        """
+        Get the current learning rate.
+
+        Returns
+        -------
+        float
+            Current learning rate.
+        """
+        return self.learning_rate.value
+
+    def set_learning_rate(self, learning_rate: float) -> None:
+        """
+        Set the learning rate.
+
+        This method sets the learning rate in a thread-safe manner.
+        """
+        self.learning_rate.value = learning_rate
 
     def train(
         self,
@@ -111,7 +137,10 @@ class ParallelQLearning(OptimalQLearningBase):
         val_every_n_steps: int,
         val_steps: int | None,
         val_episodes: int | None,
-    ) -> None:
+        curr_state_dicts: list[dict[str, Any]] | None = None,
+    ) -> tuple[
+        list[float], list[float], Sequence[DistClassicRLEnv | VectorEnv], list[dict[str, Any]]
+    ]:
         """
         Train the agent in the environment for a given number of steps.
 
@@ -129,8 +158,30 @@ class ParallelQLearning(OptimalQLearningBase):
             Number of steps to validate.
         val_episodes : int | None
             Number of episodes to validate.
+        curr_states : list[dict[str, Any]] | None
+            The current state of the environments.
+
+        Returns
+        -------
+        List[float]
+            The reward history during training.
+        List[float]
+            The validation reward history.
+        Sequence[DistClassicRLEnv | VectorEnv]
+            The current environments
+        List[dict[str, Any]]
+            The current states of the environments, including states, infos and episode rewards.
         """
         try:
+            self.sm = shared_memory.SharedMemory(
+                name=self.sm_name, create=True, size=self.q_table.nbytes
+            )
+            new_q_table = np.ndarray(
+                self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf
+            )
+            new_q_table[:] = self.q_table[:]
+            self.q_table = new_q_table
+
             assert (val_steps is None) ^ (val_episodes is None), (
                 "Either val_steps or val_episodes should be provided."
             )
@@ -138,25 +189,28 @@ class ParallelQLearning(OptimalQLearningBase):
             reward_history = []
             val_reward_history = []
             val_agent_reward_history = []
-            reward_queue = mp.Queue()
-            curr_states = [None] * len(envs)
+            if curr_state_dicts is None:
+                curr_states = [(env, None) for env in envs]
+            else:
+                curr_states = [
+                    (env, state) for (env, state) in zip(envs, curr_state_dicts, strict=True)
+                ]
 
             for step in range(0, steps, val_every_n_steps):
                 curr_states_pipe_list = []
                 process_list = []
-                for env, curr_state in zip(envs, curr_states, strict=False):
+                for curr_state in curr_states:
                     parent_conn, child_conn = mp.Pipe()
                     curr_states_pipe_list.append(parent_conn)
                     p = mp.Process(
                         target=self.run_steps,
                         args=(
-                            env,
-                            int(val_every_n_steps / len(envs)),
-                            reward_queue,
-                            self.sm_lock,
-                            self._exploration_rate,
-                            child_conn,
                             curr_state,
+                            int(val_every_n_steps / len(envs)),
+                            self.sm_lock,
+                            self.exploration_rate,
+                            self.learning_rate,
+                            child_conn,
                         ),
                         daemon=True,
                     )
@@ -165,18 +219,23 @@ class ParallelQLearning(OptimalQLearningBase):
                     child_conn.close()
 
                 curr_states = []
-                envs = []
+
+                reward_histories: list[list[float]] = []
 
                 for p, curr_states_pipe in zip(process_list, curr_states_pipe_list, strict=False):
                     curr_state = curr_states_pipe.recv()
-                    envs.append(curr_state["env"])
-                    curr_state.pop("env")
+                    assert curr_state is not None, "Current state cannot be None"
+
+                    # Extract episode rewards from pipe communication
+                    if "episode_rewards" in curr_state[1]:
+                        reward_histories.append(curr_state[1]["episode_rewards"])
+                        del curr_state[1]["episode_rewards"]
                     curr_states.append(curr_state)
                     curr_states_pipe.close()
                     p.join()
 
-                while not reward_queue.empty():
-                    reward_history.append(reward_queue.get())
+                for reward_history_step in zip(*reward_histories, strict=False):
+                    reward_history.extend([r for r in reward_history_step if r is not None])
 
                 val_total_rewards, val_agent_rewards = 0.0, {}
                 if val_steps is not None:
@@ -190,94 +249,124 @@ class ParallelQLearning(OptimalQLearningBase):
                 val_agent_reward_history.append(val_agent_rewards)
                 logger.debug("Step %d, Eval Total Rewards: %s", step * len(envs), val_total_rewards)
         finally:
+            q_table_copy = self.q_table.copy()
             self.sm.close()
             self.sm.unlink()
+            self.q_table = q_table_copy
+
+        ret1 = [curr_state[0] for curr_state in curr_states]
+        ret2 = [curr_state[1] for curr_state in curr_states if curr_state[1] is not None]
+        return (reward_history, val_reward_history, ret1, ret2)
 
     def run_steps(
         self,
-        env: DistClassicRLEnv | VectorEnv,
+        curr_state: tuple[DistClassicRLEnv | VectorEnv, dict | None],
         num_steps: int,
-        rewards_queue: mp.Queue,
         sm_lock: Lock,
         exploration_rate_value: Synchronized,
+        learning_rate_value: Synchronized,
         curr_state_pipe: connection.Connection | None,
-        curr_state: dict | None = None,
     ) -> None:
         """
         Run a single environment with multiple agents for a given number of steps.
 
         Parameters
         ----------
-        env : DistClassicRLEnv | VectorEnv
-            The environment to run.
+        curr_state : tuple[DistClassicRLEnv | VectorEnv, tuple[Any, Any, Any] | None]
+            The current state of the environment. It contains the environment instance
+            and, optionally, another dict with the states, infos and episode rewards.
         num_steps : int
             Number of steps to run.
-        rewards_queue : mp.Queue
-            Queue to collect rewards from the environment.
         sm_lock : Lock
             Lock for synchronizing access to shared memory.
         exploration_rate_value : Synchronized
             Shared exploration rate value.
+        learning_rate_value : Synchronized
+            Shared learning rate value.
         curr_state_pipe : connection.Connection | None
             Pipe for communicating current state.
         curr_state : dict | None
             Current state dictionary, by default None.
         """
-        self.sm_lock = sm_lock
-        self._exploration_rate = exploration_rate_value
-        self.sm = shared_memory.SharedMemory(name=self.sm_name)
-        self.q_table = np.ndarray(self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf)
-
-        if curr_state is None:
-            states, infos = env.reset()
-            n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
-            agent_rewards = np.zeros(n_agents, dtype=np.float32)
-        else:
-            states = curr_state["states"]
-            infos = curr_state["infos"]
-            agent_rewards = curr_state["agent_rewards"]
-
-        for _ in range(num_steps):
-            if isinstance(states, dict):
-                with self.sm_lock:
-                    actions = self.choose_actions(
-                        states=states["observation"], action_masks=states["action_mask"]
-                    )
-            else:
-                with self.sm_lock:
-                    actions = self.choose_actions(states)
-
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
-
-            agent_rewards += rewards
-
-            if isinstance(next_states, dict):
-                assert isinstance(states, dict)
-                with self.sm_lock:
-                    self.learn(
-                        states["observation"],
-                        actions,
-                        rewards,
-                        next_states["observation"],
-                        terminateds,
-                        next_states["action_mask"],
-                    )
-            else:
-                assert not isinstance(states, dict)
-                with self.sm_lock:
-                    self.learn(states, actions, rewards, next_states, terminateds)
-            states = next_states
-
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
-                if terminated or truncated:
-                    rewards_queue.put(agent_rewards[i])
-                    agent_rewards[i] = 0
-
-        if curr_state_pipe is not None:
-            curr_state_pipe.send(
-                {"env": env, "states": states, "infos": infos, "agent_rewards": agent_rewards}
+        try:
+            self.sm_lock = sm_lock
+            self.exploration_rate = exploration_rate_value
+            self.learning_rate = learning_rate_value
+            self.sm = shared_memory.SharedMemory(name=self.sm_name)
+            self.q_table = np.ndarray(
+                self.q_table.shape, dtype=self.q_table.dtype, buffer=self.sm.buf
             )
-            curr_state_pipe.close()
+
+            env = curr_state[0]
+
+            if curr_state[1] is None:
+                states, infos = env.reset()
+                n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
+                agent_rewards = np.zeros(n_agents, dtype=np.float32)
+            else:
+                states = curr_state[1]["states"]
+                infos = curr_state[1]["infos"]
+                agent_rewards = curr_state[1]["rewards"]
+
+            # Collect episode rewards locally to avoid queue deadlock
+            episode_rewards = []
+
+            for _ in range(num_steps):
+                # Use minimal locking - only lock when accessing shared Q-table
+                if isinstance(states, dict):
+                    with self.sm_lock:
+                        actions = self.choose_actions(
+                            states=states["observation"], action_masks=states["action_mask"]
+                        )
+                else:
+                    with self.sm_lock:
+                        actions = self.choose_actions(states)
+
+                # Environment step doesn't need locking
+                next_states, rewards, terminateds, truncateds, infos = env.step(actions)
+                agent_rewards += rewards
+
+                # Learning step needs locking for Q-table update
+                if isinstance(next_states, dict):
+                    assert isinstance(states, dict)
+                    with self.sm_lock:
+                        self.learn(
+                            states["observation"],
+                            actions,
+                            rewards,
+                            next_states["observation"],
+                            terminateds,
+                            next_states["action_mask"],
+                        )
+                else:
+                    assert not isinstance(states, dict)
+                    with self.sm_lock:
+                        self.learn(states, actions, rewards, next_states, terminateds)
+
+                states = next_states
+
+                for i, (terminated, truncated) in enumerate(
+                    zip(terminateds, truncateds, strict=False)
+                ):
+                    if terminated or truncated:
+                        episode_rewards.append(agent_rewards[i])
+                        agent_rewards[i] = 0
+
+            if curr_state_pipe is not None:
+                curr_state_pipe.send(
+                    (
+                        env,
+                        {
+                            "states": states,
+                            "infos": infos,
+                            "rewards": agent_rewards,
+                            "episode_rewards": episode_rewards,
+                        },
+                    )
+                )
+        finally:
+            self.sm.close()
+            curr_state_pipe.close() if curr_state_pipe is not None else None
 
     def evaluate_steps(
         self,

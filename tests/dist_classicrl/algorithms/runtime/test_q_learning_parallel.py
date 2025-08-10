@@ -41,10 +41,10 @@ class TestParallelQLearning:
             self.agent = ParallelQLearning(
                 state_size=self.state_size,
                 action_size=self.action_size,
-                learning_rate=0.1,
-                discount_factor=0.9,
-                exploration_rate=0.1,
-                exploration_decay=0.99,
+                learning_rate=0.5,
+                discount_factor=0.875,
+                exploration_rate=0.5,
+                exploration_decay=0.9375,
                 min_exploration_rate=0.01,
             )
 
@@ -52,10 +52,10 @@ class TestParallelQLearning:
         """Test proper initialization of the ParallelQLearning class."""
         assert self.agent.state_size == 10
         assert self.agent.action_size == 3
-        assert self.agent.learning_rate == 0.1
-        assert self.agent.discount_factor == 0.9
-        assert self.agent.exploration_rate == 0.1
-        assert self.agent.exploration_decay == 0.99
+        assert self.agent.get_learning_rate() == 0.5
+        assert self.agent.discount_factor == 0.875
+        assert self.agent.get_exploration_rate() == 0.5
+        assert self.agent.exploration_decay == 0.9375
         assert self.agent.min_exploration_rate == 0.01
         assert self.agent.q_table.shape == (10, 3)
 

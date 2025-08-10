@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -53,7 +53,7 @@ class SingleThreadQLearning(OptimalQLearningBase):
     min_exploration_rate: float
     q_table: NDArray[np.float32]
 
-    def train(
+    def train(  # noqa: C901, PLR0912
         self,
         env: DistClassicRLEnv | SyncVectorEnv,
         steps: int,
@@ -61,7 +61,8 @@ class SingleThreadQLearning(OptimalQLearningBase):
         val_every_n_steps: int,
         val_steps: int | None,
         val_episodes: int | None,
-    ) -> None:
+        curr_state_dict: dict | None = None,
+    ) -> tuple[list[float], list[float], DistClassicRLEnv | SyncVectorEnv, dict[str, Any]]:
         """
         Train the agent in the environment for a given number of steps.
 
@@ -79,17 +80,37 @@ class SingleThreadQLearning(OptimalQLearningBase):
             Number of steps to validate.
         val_episodes : int | None
             Number of episodes to validate.
+        curr_state_dict : dict | None
+            The current state of the environments.
+
+        Return
+        ------
+        List[float]
+            The reward history during training.
+        List[float]
+            The validation reward history.
+        DistClassicRLEnv | SyncVectorEnv
+            The current environments.
+        dict[str, Any]
+            The current state of the environments, including states, infos and episode rewards.
         """
         assert (val_steps is None) ^ (val_episodes is None), (
             "Either val_steps or val_episodes should be provided."
         )
 
-        states, infos = env.reset()
+        if curr_state_dict is not None:
+            states = curr_state_dict["states"]
+            infos = curr_state_dict["infos"]
+            agent_rewards = curr_state_dict["rewards"]
+        else:
+            states, infos = env.reset()
         n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
+
+        if curr_state_dict is None:
+            agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
         val_reward_history = []
         val_agent_reward_history = []
-        agent_rewards = np.zeros(n_agents, dtype=np.float32)
         for step in range(steps):
             if isinstance(states, dict):
                 actions = self.choose_actions(
@@ -134,6 +155,17 @@ class SingleThreadQLearning(OptimalQLearningBase):
                 val_reward_history.append(val_total_rewards)
                 val_agent_reward_history.append(val_agent_rewards)
                 logger.debug("Step %d, Eval total rewards: %s", step + 1, val_total_rewards)
+
+        return (
+            reward_history,
+            val_reward_history,
+            env,
+            {
+                "states": states,
+                "infos": infos,
+                "rewards": agent_rewards,
+            },
+        )
 
     def evaluate_steps(
         self,
