@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from mpi4py import MPI
 
-from dist_classicrl.algorithms.runtime.q_learning_single_thread import (
+from dist_classicrl.algorithms.runtime.single_thread_runtime import (
     OptimalQLearningBase,
 )
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
