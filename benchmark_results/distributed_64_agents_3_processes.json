@@ -1,0 +1,13 @@
+{
+  "runtime": "distributed",
+  "total_steps": 1000,
+  "effective_steps": 64000,
+  "elapsed_time": 2.019104070990579,
+  "throughput": 31697.226962947672,
+  "step_multiplier": 64,
+  "timestamp": 1755034658.7969294,
+  "num_agents": 64,
+  "num_processes": 2,
+  "mpi_rank": 0,
+  "mpi_size": 3
+}

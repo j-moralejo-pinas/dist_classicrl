@@ -39,26 +39,10 @@ class ParallelQLearning(BaseRuntime):
     ----------
     num_agents : int
         Number of agents in the environment.
-    state_size : int
-        Size of the state space.
-    action_size : int
-        Size of the action space.
-    learning_rate : float
-        Learning rate for Q-learning.
-    learning_rate_decay : float
-        Decay rate for learning rate.
-    min_learning_rate : float
-        Minimum learning rate.
-    discount_factor : float
-        Discount factor for future rewards.
-    exploration_rate : float
-        Initial exploration rate for epsilon-greedy policy.
-    exploration_decay : float
-        Decay rate for exploration rate.
-    min_exploration_rate : float
-        Minimum exploration rate.
-    q_table : NDArray[np.float32]
-        Shared memory array for the Q-table.
+    learning_rate : Synchronized
+        Shared learning rate value.
+    exploration_rate : Synchronized
+        Shared exploration rate value.
     sm : shared_memory.SharedMemory
         Shared memory object for the Q-table.
     sm_lock : Lock
@@ -68,8 +52,6 @@ class ParallelQLearning(BaseRuntime):
     """
 
     num_agents: int
-    state_size: int
-    action_size: int
     learning_rate: Synchronized
     exploration_rate: Synchronized
     sm: shared_memory.SharedMemory

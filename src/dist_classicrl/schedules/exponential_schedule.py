@@ -28,4 +28,4 @@ class ExponentialSchedule(BaseSchedule):
         steps : int
             The number of steps that have been taken.
         """
-        self.set_value(self.get_value() * (self.decay_rate**steps))
+        self.set_value(max(self.get_value() * (self.decay_rate**steps), self.min_value))

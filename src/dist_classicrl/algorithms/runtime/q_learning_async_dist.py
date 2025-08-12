@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import logging
 import queue
-import threading
-from typing import TYPE_CHECKING
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from mpi4py import MPI
 
-from dist_classicrl.algorithms.runtime.single_thread_runtime import (
-    OptimalQLearningBase,
-)
+from dist_classicrl.algorithms.runtime.base_runtime import BaseRuntime
 from dist_classicrl.environments.custom_env import DistClassicRLEnv
 
 if TYPE_CHECKING:
@@ -27,7 +25,7 @@ MASTER_RANK = 0
 logger = logging.getLogger(__name__)
 
 
-class DistAsyncQLearning(OptimalQLearningBase):
+class DistAsyncQLearning(BaseRuntime):
     """
     Distributed asynchronous Q-learning implementation using MPI.
 
@@ -39,24 +37,6 @@ class DistAsyncQLearning(OptimalQLearningBase):
     ----------
     num_agents : int
         Number of agents in the environment.
-    state_size : int
-        Size of the state space.
-    action_size : int
-        Size of the action space.
-    learning_rate : float
-        Learning rate for Q-learning.
-    discount_factor : float
-        Discount factor for future rewards.
-    exploration_rate : float
-        Initial exploration rate for epsilon-greedy policy.
-    exploration_decay : float
-        Decay rate for exploration rate.
-    min_exploration_rate : float
-        Minimum exploration rate.
-    q_table : NDArray[np.float32]
-        Q-table for storing state-action values.
-    stable_q_table : NDArray[np.float32]
-        Stable copy of Q-table for evaluation.
     experience_queue : queue.Queue
         Queue for storing experience tuples.
     batch_size : int
@@ -64,18 +44,17 @@ class DistAsyncQLearning(OptimalQLearningBase):
     """
 
     num_agents: int
-    state_size: int
-    action_size: int
-    learning_rate: float
-    discount_factor: float
-    exploration_rate: float
-    exploration_decay: float
-    min_exploration_rate: float
-    q_table: NDArray[np.float32]
-    stable_q_table: NDArray[np.float32]
-
     experience_queue: queue.Queue
     batch_size: int
+
+    def init_training(self) -> None:
+        """Initialize the training environment."""
+
+    def run_steps(self) -> None:
+        """Run training steps."""
+
+    def close_training(self) -> None:
+        """Close the training environment."""
 
     def update_q_table(
         self,
@@ -83,7 +62,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
         val_every_n_steps: int,
         val_steps: int | None,
         val_episodes: int | None,
-    ) -> None:
+    ) -> list[float]:
         """
         Update Q-table using experiences from the experience queue.
 
@@ -101,6 +80,11 @@ class DistAsyncQLearning(OptimalQLearningBase):
             Number of steps for validation (mutually exclusive with val_episodes).
         val_episodes : int | None
             Number of episodes for validation (mutually exclusive with val_steps).
+
+        Returns
+        -------
+        list[float]
+            The validation reward history.
         """
         running = True
         val_reward_history = []
@@ -138,23 +122,30 @@ class DistAsyncQLearning(OptimalQLearningBase):
             if not state_batch:
                 continue
 
-            np_state_batch = np.fromiter(state_batch, dtype=np.int32)
+            np_state_batch = (
+                {"observation": np.fromiter(state_batch, dtype=np.int32)}
+                if next_action_masks_batch
+                else np.fromiter(state_batch, dtype=np.int32)
+            )
+
             np_action_batch = np.fromiter(action_batch, dtype=np.int32)
             np_reward_batch = np.fromiter(reward_batch, dtype=np.float32)
-            np_next_state_batch = np.fromiter(next_state_batch, dtype=np.int32)
-            np_terminated_batch = np.fromiter(terminated_batch, dtype=np.bool)
-            np_next_action_masks_batch = (
-                np.array(next_action_masks_batch, dtype=np.int32)
+            np_next_state_batch = (
+                {
+                    "observation": np.fromiter(next_state_batch, dtype=np.int32),
+                    "action_mask": np.array(next_action_masks_batch, dtype=np.int32),
+                }
                 if next_action_masks_batch
-                else None
+                else np.fromiter(next_state_batch, dtype=np.int32)
             )
-            self.learn(
+            np_terminated_batch = np.fromiter(terminated_batch, dtype=np.bool)
+
+            self._learn(
                 np_state_batch,
                 np_action_batch,
                 np_reward_batch,
                 np_next_state_batch,
                 np_terminated_batch,
-                np_next_action_masks_batch,
             )
 
             if steps_since_val >= val_every_n_steps:
@@ -170,6 +161,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 val_agent_reward_history.append(val_agent_rewards)
                 steps_since_val = 0
                 logger.debug("Step %d, Eval total rewards: %s", step, val_total_rewards)
+        return val_reward_history
 
     def communicate_master(self, steps: int) -> list[float]:  # noqa: C901 PLR0912
         # TODO(Javier): Try to fix this
@@ -206,12 +198,7 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 assert data is not None, "Received None from worker"
                 step += 1
                 next_states, rewards, terminateds, truncateds, infos, firsts = data
-                if isinstance(next_states, dict):
-                    actions = self.choose_actions(
-                        next_states["observation"], action_masks=next_states["action_mask"]
-                    )
-                else:
-                    actions = self.choose_actions(next_states)
+                actions = self._choose_actions(next_states)
                 comm.isend(actions, dest=worker_id + 1, tag=1)
                 requests[worker_id] = comm.irecv(source=worker_id + 1)
 
@@ -282,11 +269,20 @@ class DistAsyncQLearning(OptimalQLearningBase):
                 if step >= steps:
                     self.experience_queue.put(None)
                     break
+
+        # Wait for all pending requests to complete before sending termination signals
+        for request in requests:
+            if not request.test()[0]:
+                request.wait()
         for worker_id in range(1, num_workers + 1):
             comm.isend(None, dest=worker_id, tag=0)
         return reward_history
 
-    def run_environment(self, env: DistClassicRLEnv | VectorEnv) -> None:
+    def run_environment(
+        self,
+        env: DistClassicRLEnv | VectorEnv,
+        curr_state_dict: dict | None = None,
+    ) -> tuple[DistClassicRLEnv | VectorEnv, dict[str, Any]]:
         """
         Run environment on worker nodes.
 
@@ -298,13 +294,33 @@ class DistAsyncQLearning(OptimalQLearningBase):
         ----------
         env : DistClassicRLEnv | VectorEnv
             Environment instance to run on this worker node.
+        curr_state_dict : dict | None
+            Current state dictionary for the environment.
+
+        Returns
+        -------
+        DistClassicRLEnv | VectorEnv
+            The environment instance after running on the worker node.
+        dict[str, Any]
+            The info dictionary containing additional information.
         """
         status = MPI.Status()
 
+        while True:
+            flag = comm.Iprobe(source=MASTER_RANK, tag=MPI.ANY_TAG, status=status)
+            if not flag:
+                break
+            # Consume the pending message
+            comm.recv(source=MASTER_RANK)
+        comm.Barrier()
+
         num_agents_or_envs = env.num_agents if isinstance(env, DistClassicRLEnv) else env.num_envs
 
-        states, infos = env.reset()
-        rewards = 0
+        if curr_state_dict is None:
+            states, infos = env.reset()
+        else:
+            states = curr_state_dict["states"]
+            infos = curr_state_dict["infos"]
         data_sent = (
             states,
             np.fromiter((0.0 for _ in range(num_agents_or_envs)), dtype=np.float32),
@@ -337,6 +353,9 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
             comm.send(data_sent, dest=MASTER_RANK)
 
+        comm.Barrier()
+        return env, {"states": next_states, "infos": infos, "rewards": rewards}
+
     def train(
         self,
         env: DistClassicRLEnv | VectorEnv,
@@ -345,8 +364,15 @@ class DistAsyncQLearning(OptimalQLearningBase):
         val_every_n_steps: int,
         val_steps: int | None,
         val_episodes: int | None,
+        curr_state_dict: dict[str, Any] = {},  # noqa: B006
+        *,
         batch_size: int = 32,
-    ) -> None:
+    ) -> tuple[
+        list[float],
+        list[float],
+        DistClassicRLEnv | VectorEnv | list[DistClassicRLEnv] | list[VectorEnv] | None,
+        dict[str, Any] | None,
+    ]:
         """
         Train the agent in the environment for a given number of steps.
 
@@ -371,6 +397,19 @@ class DistAsyncQLearning(OptimalQLearningBase):
             Number of episodes to validate.
         batch_size : int
             Batch size for training.
+        auto_cleanup : bool
+            Whether to enable automatic cleanup after training ends.
+
+        Return
+        ------
+        List[float]
+            The reward history during training.
+        List[float]
+            The validation reward history.
+        DistClassicRLEnv | VectorEnv | list[DistClassicRLEnv] | list[VectorEnv]
+            The current environments.
+        dict[str, Any]
+            The current state of the environments, including states, infos and episode rewards.
         """
         assert (val_steps is None) ^ (val_episodes is None), (
             "Either val_steps or val_episodes should be provided."
@@ -378,105 +417,31 @@ class DistAsyncQLearning(OptimalQLearningBase):
 
         # Master Node
         if RANK == MASTER_RANK:
+            for i in range(1, NUM_NODES):
+                while True:
+                    flag = comm.Iprobe(source=i, tag=MPI.ANY_TAG, status=MPI.Status())
+                    if not flag:
+                        break
+                    # Consume the pending message
+                    comm.recv(source=i)
+
             # Run the Q-learning update in a separate thread
+            comm.Barrier()
+
             self.experience_queue = queue.Queue(maxsize=-1)
             self.batch_size = batch_size
-            update_thread = threading.Thread(
-                target=self.update_q_table,
-                args=(val_env, val_every_n_steps, val_steps, val_episodes),
-                daemon=True,
-            )
-            update_thread.start()
-            # Run the communication, queuing and metric logging in the main thread
-            self.communicate_master(steps)
-            update_thread.join()
+
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    self.update_q_table, val_env, val_every_n_steps, val_steps, val_episodes
+                )
+
+                # Run the communication, queuing and metric logging in the main thread
+                reward_history = self.communicate_master(steps)
+
+                val_reward_history = future.result()
+            comm.Barrier()
+            return reward_history, val_reward_history, None, None
         # Worker Nodes
-        else:
-            self.run_environment(env)
-
-    def evaluate_steps(
-        self,
-        env: DistClassicRLEnv | VectorEnv,
-        steps: int,
-    ) -> tuple[float, list[float]]:
-        """
-        Evaluate the agent in the environment for a given number of steps.
-
-        Parameters
-        ----------
-        env : DistClassicRLEnv | VectorEnv
-            The environment to evaluate.
-        steps : int
-            Number of steps to evaluate.
-
-        Returns
-        -------
-        tuple[float, list[float]]
-            Total rewards obtained by the agent and rewards for each agent.
-        """
-        states, infos = env.reset(seed=42)
-        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
-        agent_rewards = np.zeros(n_agents, dtype=np.float32)
-        reward_history = []
-        for _ in range(steps):
-            if isinstance(states, dict):
-                actions = self.choose_actions(
-                    states=states["observation"],
-                    action_masks=states["action_mask"],
-                    deterministic=True,
-                )
-            else:
-                actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
-            agent_rewards += rewards
-            states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=True)):
-                if terminated or truncated:
-                    reward_history.append(agent_rewards[i])
-                    agent_rewards[i] = 0
-        return sum(reward_history), reward_history
-
-    def evaluate_episodes(
-        self,
-        env: DistClassicRLEnv | VectorEnv,
-        episodes: int,
-    ) -> tuple[float, list[float]]:
-        """
-        Evaluate the agent in the environment for a given number of episodes.
-
-        Parameters
-        ----------
-        env : DistClassicRLEnv | VectorEnv
-            The environment to evaluate.
-        episodes : int
-            Number of episodes to evaluate.
-
-        Returns
-        -------
-        tuple[float, list[float]]
-            Total rewards obtained by the agent and rewards for each agent.
-        """
-        states, infos = env.reset(seed=42)
-        n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
-        agent_rewards = np.zeros(n_agents, dtype=np.float32)
-        reward_history = []
-        episode = 0
-        while episode < episodes:
-            if isinstance(states, dict):
-                actions = self.choose_actions(
-                    states=states["observation"],
-                    action_masks=states["action_mask"],
-                    deterministic=True,
-                )
-            else:
-                actions = self.choose_actions(states, deterministic=True)
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
-            agent_rewards += rewards
-            states = next_states
-            for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=True)):
-                if terminated or truncated:
-                    episode += 1
-                    reward_history.append(agent_rewards[i])
-                    agent_rewards[i] = 0
-
-        return sum(reward_history), reward_history
+        env, curr_state_dict = self.run_environment(env)
+        return [], [], env, curr_state_dict

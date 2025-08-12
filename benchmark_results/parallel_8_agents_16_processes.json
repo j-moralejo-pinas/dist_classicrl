@@ -1,0 +1,13 @@
+{
+  "runtime": "parallel",
+  "total_steps": 1000,
+  "effective_steps": 8000,
+  "elapsed_time": 0.21091860299929976,
+  "throughput": 37929.323854029884,
+  "step_multiplier": 8,
+  "timestamp": 1755034598.6664424,
+  "num_agents": 8,
+  "num_processes": 16,
+  "mpi_rank": 0,
+  "mpi_size": 1
+}

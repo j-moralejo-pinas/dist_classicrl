@@ -155,7 +155,7 @@ class BaseRuntime(ABC):
 
         for step in range(0, steps, val_every_n_steps):
             _, episode_reward_history, env, state_dict = self.run_steps(
-                steps=val_every_n_steps,
+                steps=min(val_every_n_steps, steps - step),
                 env=env,
                 curr_state_dict=curr_state_dict,
             )
@@ -215,7 +215,7 @@ class BaseRuntime(ABC):
 
         states = next_states
 
-        for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
+        for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=True)):
             if terminated or truncated:
                 reward_history.append(agent_rewards[i])
                 agent_rewards[i] = 0
