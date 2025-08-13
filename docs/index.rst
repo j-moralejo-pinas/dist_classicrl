@@ -53,7 +53,6 @@ Key Features
 
 Documentation Sections
 =======================
-========
 
 .. toctree::
     :maxdepth: 2
@@ -66,15 +65,6 @@ Documentation Sections
 
 .. toctree::
     :maxdepth: 2
-    :caption: User Guide
-
-    Algorithms <user_guide/algorithms>
-    Environments <user_guide/environments>
-    Performance & Benchmarking <user_guide/performance>
-    Distributed Training <user_guide/distributed>
-
-.. toctree::
-    :maxdepth: 2
     :caption: API Reference
 
     API Documentation <autoapi/index>
@@ -84,8 +74,6 @@ Documentation Sections
     :caption: Development
 
     Contributing <contributing>
-    Architecture <development/architecture>
-    Testing <development/testing>
 
 .. toctree::
     :maxdepth: 1
