@@ -25,10 +25,9 @@ class TicTacToeEnv(gym.Env):
         Discrete action space with 9 possible moves (0-8).
     observation_space : gym.spaces.Dict
         Dictionary observation space containing:
-        - 'observation': MultiDiscrete space representing the board state
-            (3x3 grid flattened to a (9,) vector).
-        - 'action_mask': MultiDiscrete space indicating valid moves
-            (2 for valid, 0 for invalid) as a (9,) vector.
+
+        * observation (MultiDiscrete): Board state (3x3 grid flattened to a (9,) vector).
+        * action_mask (MultiDiscrete): Valid moves mask (1 = valid) shape (9,).
     agent_starts : bool
         Indicates if the agent starts first (True) or the machine starts first (False).
     agent_mark : int
@@ -38,9 +37,10 @@ class TicTacToeEnv(gym.Env):
     board : NDArray[np.int8]
         The current state of the TicTacToe board as a 3x3 numpy array of integers.
         Values are:
-        - 0: empty cell
-        - 1: agent's mark ('X')
-        - 2: machine's mark ('O')
+
+        * 0: empty cell
+        * 1: agent's mark ('X')
+        * 2: machine's mark ('O')
     """
 
     metadata: ClassVar[dict[str, Any]] = {"render.modes": ["human"]}

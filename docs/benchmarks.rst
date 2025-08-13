@@ -1,6 +1,6 @@
-===================
+======================
 Performance Benchmarks
-===================
+======================
 
 This page presents comprehensive performance benchmarks for the **dist_classicrl** library,
 demonstrating the scalability and efficiency of different runtime configurations for Q-learning algorithms.
@@ -106,7 +106,7 @@ Key Insights
     distributed runtime provides more consistent scaling and is suitable for multi-machine deployments.
 
 Benchmark Methodology
-====================
+=====================
 
 The benchmarks were conducted using the comprehensive benchmark script that tests various combinations of:
 
@@ -118,7 +118,7 @@ Each configuration was run for 1000 training steps using Q-learning on a TicTacT
 with throughput measured as the number of environment steps processed per second.
 
 Hardware Configuration
----------------------
+----------------------
 
 These benchmarks were conducted on the following hardware:
 

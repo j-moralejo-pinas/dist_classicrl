@@ -33,7 +33,7 @@ class ExperienceReplay:
         Buffer for storing rewards.
     next_state_buffer : NDArray[np.int32]
         Buffer for storing next states.
-    done_buffer : NDArray[np.bool_]
+    done_buffer : NDArray[np.bool]
         Buffer for storing done flags.
     position : int
         Current position in the buffer for the next experience.
@@ -48,7 +48,7 @@ class ExperienceReplay:
     action_buffer: NDArray[np.int32]
     reward_buffer: NDArray[np.float32]
     next_state_buffer: NDArray[np.int32]
-    done_buffer: NDArray[np.bool_]
+    done_buffer: NDArray[np.bool]
     position: int
     full: bool
     rng: np.random.Generator
