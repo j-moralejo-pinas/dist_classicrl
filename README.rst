@@ -36,6 +36,8 @@ A Python package for distributed classical reinforcement learning algorithms.
 **Essential Guides:**
 
 - 📦 `Installation Guide <docs/installation.rst>`_ - Setup instructions and requirements
+- 📊 `Performance Benchmarks <docs/benchmarks.rst>`_ - Benchmarking results and analysis
+- 📚 `Tutorials <docs/tutorials.rst>`_ - Step-by-step guides for using the library
 - 🤝 `Contributing Guidelines <CONTRIBUTING.rst>`_ - Development standards and contribution process
 - 📄 `License <LICENSE.txt>`_ - License terms and usage rights
 - 👥 `Authors <AUTHORS.rst>`_ - Project contributors and maintainers

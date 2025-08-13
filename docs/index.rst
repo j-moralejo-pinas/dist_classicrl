@@ -27,24 +27,7 @@ Install the package:
 
     pip install dist_classicrl
 
-Basic Q-Learning example:
-
-.. code-block:: python
-
-    from dist_classicrl.algorithms.runtime.q_learning_single_thread import SingleThreadQLearning
-    from dist_classicrl.environments.tiktaktoe_mod import TicTacToeEnv
-
-    # Create environment and agent
-    env = TicTacToeEnv()
-    agent = SingleThreadQLearning(
-        state_size=512,  # 3^9 possible board states
-        action_size=9,   # 9 possible moves
-        learning_rate=0.1,
-        discount_factor=0.99
-    )
-
-    # Train the agent
-    agent.train(env=env, steps=10000)
+For detailed examples and tutorials, see :doc:`tutorials`.
 
 Key Features
 ============
@@ -73,93 +56,52 @@ Documentation Sections
 ========
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
+    :maxdepth: 2
+    :caption: Getting Started
 
-   Overview <readme>
-   Installation & Quick Start <installation>
-   Tutorials <tutorials>
-   Performance Benchmarks <benchmarks>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guide
-
-   Algorithms <user_guide/algorithms>
-   Environments <user_guide/environments>
-   Performance & Benchmarking <user_guide/performance>
-   Distributed Training <user_guide/distributed>
+    Overview <readme>
+    Installation & Quick Start <installation>
+    Tutorials <tutorials>
+    Performance Benchmarks <benchmarks>
 
 .. toctree::
-   :maxdepth: 2
-   :caption: API Reference
+    :maxdepth: 2
+    :caption: User Guide
 
-   API Documentation <autoapi/index>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Development
-
-   Contributing <contributing>
-   Architecture <development/architecture>
-   Testing <development/testing>
+    Algorithms <user_guide/algorithms>
+    Environments <user_guide/environments>
+    Performance & Benchmarking <user_guide/performance>
+    Distributed Training <user_guide/distributed>
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Project Info
+    :maxdepth: 2
+    :caption: API Reference
 
-   License <license>
-   Authors <authors>
-   Changelog <changelog>
+    API Documentation <autoapi/index>
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Development
+
+    Contributing <contributing>
+    Architecture <development/architecture>
+    Testing <development/testing>
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Project Info
+
+    License <license>
+    Authors <authors>
+    Changelog <changelog>
 
 
 Examples
 ========
 
-**Parallel Training:**
+For complete examples and tutorials on how to use single-thread, parallel, and distributed training modes, see :doc:`tutorials`.
 
-.. code-block:: python
-
-    from dist_classicrl.algorithms.runtime.q_learning_parallel import ParallelQLearning
-
-    # Create multiple environments for parallel training
-    envs = [lambda: TicTacToeEnv() for _ in range(4)]
-
-    agent = ParallelQLearning(state_size=512, action_size=9)
-    agent.train(envs=envs, steps=50000)
-
-**Distributed Training with MPI:**
-
-.. code-block:: python
-
-    # Save as train_distributed.py
-    from dist_classicrl.algorithms.runtime.q_learning_async_dist import DistAsyncQLearning
-
-    agent = DistAsyncQLearning(state_size=512, action_size=9)
-    agent.train(env=TicTacToeEnv(), steps=100000, batch_size=32)
-
-Run with MPI:
-
-.. code-block:: bash
-
-    mpirun -n 4 python train_distributed.py
-
-**Custom Environment:**
-
-.. code-block:: python
-
-    import numpy as np
-    from dist_classicrl.environments.custom_env import DistClassicRLEnv
-
-    class MyEnv(DistClassicRLEnv):
-        def __init__(self):
-            super().__init__()
-            self.num_agents = 1
-            # Define action and observation spaces
-
-        def step(self, actions):
-            # Implement environment dynamics
-            return next_state, rewards, terminated, truncated, infos
+For performance benchmarking examples, see :doc:`benchmarks`.
 
 Performance Highlights
 ======================

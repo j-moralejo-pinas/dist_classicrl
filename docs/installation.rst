@@ -1,7 +1,7 @@
 Installation Guide
 ==================
 
-This guide provides step-by-step instructions for installing and setting up the ci-cd-python project template. Choose the installation section that best fits your needs.
+This guide provides step-by-step instructions for installing and setting up the dist_classicrl project template. Choose the installation section that best fits your needs.
 
 .. contents:: Table of Contents
     :local:
@@ -12,7 +12,7 @@ Prerequisites
 
 Before installing the project, ensure you have the following requirements:
 
-* **Python 3.x** (required for this project)
+* **Python 3.13+** (required for this project)
 * **Git** for cloning the repository
 * **Internet connection** for downloading dependencies
 
