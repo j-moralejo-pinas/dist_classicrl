@@ -79,6 +79,7 @@ Documentation Sections
    Overview <readme>
    Installation & Quick Start <installation>
    Tutorials <tutorials>
+   Performance Benchmarks <benchmarks>
 
 .. toctree::
    :maxdepth: 2

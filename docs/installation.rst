@@ -1,195 +1,206 @@
-============
-Installation
-============
+Installation Guide
+==================
 
-Requirements
-============
+This guide provides step-by-step instructions for installing and setting up the ci-cd-python project template. Choose the installation section that best fits your needs.
 
-- ``MPI`` - For distributed training (optional)
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
 
-To install MPI, follow the instructions below based on your operating system.
-
-Installation Methods
-===================
-
-PyPI Installation (Recommended)
---------------------------------
-
-Install the latest stable version from PyPI:
-
-.. code-block:: bash
-
-    pip install dist_classicrl
-
-This installs the core package with all required dependencies.
-
-Development Installation
-------------------------
-
-For the latest features or to contribute to development:
-
-.. code-block:: bash
-
-    git clone https://github.com/j-moralejo-pinas/dist_classicrl.git
-    cd dist_classicrl
-    pip install -e .
-
-For development with all optional dependencies:
-
-.. code-block:: bash
-
-    pip install -e ".[dev]"
-
-This includes testing, and code quality tools.
-
-For building documentation locally:
-
-.. code-block:: bash
-
-    pip install -e ".[docs]"
-
-
-
-MPI Support (Optional)
-======================
-
-For distributed training capabilities, you'll need MPI installed:
-
-Ubuntu/Debian
+Prerequisites
 -------------
 
-.. code-block:: bash
+Before installing the project, ensure you have the following requirements:
 
-    sudo apt-get update
-    sudo apt-get install libopenmpi-dev openmpi-bin
-    pip install mpi4py
+* **Python 3.x** (required for this project)
+* **Git** for cloning the repository
+* **Internet connection** for downloading dependencies
 
-macOS
------
+The project has been tested on Linux, macOS, and Windows systems.
 
-Using Homebrew:
+User Installation
+=================
 
-.. code-block:: bash
+This section is for users who want to use the project template without modifying the source code.
 
-    brew install open-mpi
-    pip install mpi4py
+Quick Start
+-----------
 
-Using MacPorts:
+1. **Clone the Repository**
 
-.. code-block:: bash
+    Clone the project repository from GitHub::
 
-    sudo port install openmpi
-    pip install mpi4py
+        git clone https://github.com/j-moralejo-pinas/dist_classicrl.git
+        cd dist_classicrl
 
-Windows
--------
+2. **Set Up Virtual Environment (Recommended)**
 
-Windows MPI support requires Microsoft MPI:
+    While not mandatory, using a virtual environment is highly recommended to avoid dependency conflicts::
 
-1. Download and install `Microsoft MPI <https://docs.microsoft.com/en-us/message-passing-interface/microsoft-mpi>`_
-2. Install mpi4py:
+        # Using conda (recommended)
+        conda create -n env_config python=3.x
+        conda activate env_config
 
-.. code-block:: bash
+        # OR using venv
+        python -m venv venv
+        # On Linux/macOS:
+        source venv/bin/activate
+        # On Windows:
+        venv\Scripts\activate
 
-    pip install mpi4py
+3. **Install the Package**
 
-Conda Installation
-------------------
+    Install the project and its dependencies::
 
-If you prefer conda:
+        pip install -e .
 
-.. code-block:: bash
+4. **Verify Installation**
 
-    conda install -c conda-forge mpi4py
-    pip install dist_classicrl
+    Test that the installation was successful::
 
-Verification
-============
+        python -c "import dist_classicrl; print('Installation successful!')"
 
-Test your installation:
+5. **Install MPI (Optional)**
 
-.. code-block:: python
+    If you plan to use distributed training, install MPI::
 
-    import dist_classicrl
-    print(f"dist_classicrl version: {dist_classicrl.__version__}")
+        # On Linux
+        sudo apt-get install libopenmpi-dev openmpi-bin
 
-    # Test basic functionality
-    from dist_classicrl.algorithms.runtime.q_learning_single_thread import SingleThreadQLearning
-    agent = SingleThreadQLearning(state_size=10, action_size=4)
-    print("✓ Single-threaded Q-learning works")
+        # On macOS
+        brew install open-mpi
 
-    # Test parallel functionality
-    from dist_classicrl.algorithms.runtime.q_learning_parallel import ParallelQLearning
-    agent = ParallelQLearning(state_size=10, action_size=4)
-    print("✓ Parallel Q-learning works")
+        # On Windows
+        Download and install Microsoft MPI from their official site.
 
-Test MPI Installation (if installed):
+    Finally, verify the installation::
 
-.. code-block:: bash
+        python -c "import mpi4py; print('MPI4Py installation successful!')"
 
-    # Test MPI
-    mpirun -n 2 python -c "from mpi4py import MPI; print(f'MPI Rank: {MPI.COMM_WORLD.Get_rank()}')"
+Developer Installation
+======================
 
-    # Test distributed Q-learning
-    mpirun -n 2 python -c "from dist_classicrl.algorithms.runtime.q_learning_async_dist import DistAsyncQLearning; print('✓ Distributed Q-learning available')"
+This section is for developers who want to contribute to the project or modify the source code.
 
-Virtual Environments
-===================
+Development Setup
+-----------------
 
-We strongly recommend using virtual environments:
+1. **Clone and Navigate**
 
-**Using venv:**
+    ::
 
-.. code-block:: bash
+        git clone https://github.com/j-moralejo-pinas/dist_classicrl.git
+        cd dist_classicrl
 
-    python -m venv dist_classicrl_env
-    source dist_classicrl_env/bin/activate  # On Windows: dist_classicrl_env\Scripts\activate
-    pip install dist_classicrl
+2. **Set Up Development Environment**
 
-**Using conda:**
+    Create a virtual environment (recommended)::
 
-.. code-block:: bash
+        conda create -n dist_classicrl-dev python=3.13
+        conda activate dist_classicrl-dev
 
-    conda create -n dist_classicrl python=3.13
-    conda activate dist_classicrl
-    pip install dist_classicrl
+3. **Install MPI**
 
-Upgrading
-=========
+    If you plan to use distributed training, install MPI::
 
-To upgrade to the latest version:
+        # On Linux
+        sudo apt-get install libopenmpi-dev openmpi-bin
 
-.. code-block:: bash
+        # On macOS
+        brew install open-mpi
 
-    pip install --upgrade dist_classicrl
+        # On Windows
+        Download and install Microsoft MPI from their official site.
 
-To upgrade to a specific version:
+4. **Install in Development Mode**
 
-.. code-block:: bash
+    Install the package with development dependencies::
 
-    pip install dist_classicrl==1.2.3
+        pip install -e ".[dev,docs]"
 
-Uninstalling
-============
+    This installs the project in editable mode with all development tools including:
 
-To completely remove the package:
+   * ``pytest`` - Testing framework
+   * ``pyright`` - Type checking
+   * ``pre-commit`` - Git hooks for code quality
+   * ``ruff`` - Fast Python linter and formatter
+   * ``pydoclint`` - Documentation linting
+   * ``docformatter`` - Documentation formatting
+   * ``pytest-cov`` - Test coverage
+   * ``pyupgrade`` - Code modernization
+   * ``sphinx`` - Documentation generation
+   * ``sphinx-autoapi`` - Automatic API documentation generation
 
-.. code-block:: bash
+5. **Set Up Pre-commit Hooks**
 
-    pip uninstall dist_classicrl
+    Install pre-commit hooks to ensure code quality::
 
-If you installed development dependencies:
+        pre-commit install
 
-.. code-block:: bash
+6. **Configure Type Checking**
 
-    pip uninstall dist_classicrl pytest sphinx ruff pyright pre-commit
+    Link your development environment to Pyright for proper type checking. Create a ``pyrightconfig.local.json`` file in the project root::
+
+        {
+            "venvPath": "/path/to/your/conda/envs",
+            "venv": "dist_classicrl-dev"
+        }
+
+    Replace ``/path/to/your/conda/envs`` with your actual conda environments path (e.g., ``/home/username/miniconda3/envs`` or ``/home/username/micromamba/envs``).
+
+7. **Configure Environment**
+
+    Set the ``PYTHONPATH`` environment variable::
+
+        export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+
+    Or add this to your shell profile (``~/.bashrc``, ``~/.zshrc``, etc.).
+
+8. **Verify Installation**
+
+    Test that the development installation was successful::
+
+        python -c "import dist_classicrl; print('Development installation successful!')"
+        pytest --version
+        ruff --version
+        pyright --version
+
+Troubleshooting
+===============
+
+**Common Issues**
+
+**Import Errors**
+
+If you encounter import errors, ensure the ``PYTHONPATH`` is set correctly::
+
+    export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+
+**Virtual Environment Issues**
+
+If you have issues with virtual environments, try::
+
+    # For conda environments
+    conda info --envs  # List all environments
+    conda activate dist_classicrl-dev  # Activate the environment
+
+    # For venv environments
+    which python  # Check which Python you're using
+    pip list  # Check installed packages
+
+**Getting Help**
+
+* Check the project's GitHub issues: https://github.com/j-moralejo-pinas/dist_classicrl/issues
+* Review the documentation for detailed usage examples
+* Ensure all dependencies are correctly installed
 
 Next Steps
 ==========
 
-After installation, check out:
+After successful installation, you can:
 
-- :doc:`tutorials` - Step-by-step guides for common use cases
-- :doc:`user_guide/algorithms` - Detailed algorithm documentation
-- :doc:`autoapi/index` - Complete API reference
-- :doc:`user_guide/performance` - Performance optimization tips
+1. **Read the Documentation**: Navigate through the user guides for detailed usage instructions
+
+For detailed usage instructions and examples, refer to the documentation:
+* :doc:`index` - Project overview and documentation
+* :doc:`contributing` - How to contribute to the project
