@@ -1,4 +1,4 @@
-"""Experience Replay buffer for storing and sampling experiences in reinforcement learning."""
+"""Experience Replay buffer for storing and sampling experiences in reinforcement learning (WIP)."""
 
 from __future__ import annotations
 
