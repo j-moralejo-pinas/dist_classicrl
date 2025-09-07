@@ -119,34 +119,32 @@ class DistAsyncQLearning(BaseRuntime):
                 steps_since_val += 1
                 step += 1
 
-            if not state_batch:
-                continue
+            if state_batch:
+                np_state_batch = (
+                    {"observation": np.fromiter(state_batch, dtype=np.int32)}
+                    if next_action_masks_batch
+                    else np.fromiter(state_batch, dtype=np.int32)
+                )
 
-            np_state_batch = (
-                {"observation": np.fromiter(state_batch, dtype=np.int32)}
-                if next_action_masks_batch
-                else np.fromiter(state_batch, dtype=np.int32)
-            )
+                np_action_batch = np.fromiter(action_batch, dtype=np.int32)
+                np_reward_batch = np.fromiter(reward_batch, dtype=np.float32)
+                np_next_state_batch = (
+                    {
+                        "observation": np.fromiter(next_state_batch, dtype=np.int32),
+                        "action_mask": np.array(next_action_masks_batch, dtype=np.int32),
+                    }
+                    if next_action_masks_batch
+                    else np.fromiter(next_state_batch, dtype=np.int32)
+                )
+                np_terminated_batch = np.fromiter(terminated_batch, dtype=np.bool)
 
-            np_action_batch = np.fromiter(action_batch, dtype=np.int32)
-            np_reward_batch = np.fromiter(reward_batch, dtype=np.float32)
-            np_next_state_batch = (
-                {
-                    "observation": np.fromiter(next_state_batch, dtype=np.int32),
-                    "action_mask": np.array(next_action_masks_batch, dtype=np.int32),
-                }
-                if next_action_masks_batch
-                else np.fromiter(next_state_batch, dtype=np.int32)
-            )
-            np_terminated_batch = np.fromiter(terminated_batch, dtype=np.bool)
-
-            self._learn(
-                np_state_batch,
-                np_action_batch,
-                np_reward_batch,
-                np_next_state_batch,
-                np_terminated_batch,
-            )
+                self._learn(
+                    np_state_batch,
+                    np_action_batch,
+                    np_reward_batch,
+                    np_next_state_batch,
+                    np_terminated_batch,
+                )
 
             if steps_since_val >= val_every_n_steps:
                 val_total_rewards, val_agent_rewards = 0.0, {}
@@ -196,7 +194,6 @@ class DistAsyncQLearning(BaseRuntime):
                 if not test_flag:
                     continue
                 assert data is not None, "Received None from worker"
-                step += 1
                 next_states, rewards, terminateds, truncateds, infos, firsts = data
                 actions = self._choose_actions(next_states)
                 comm.isend(actions, dest=worker_id + 1, tag=1)
@@ -205,6 +202,7 @@ class DistAsyncQLearning(BaseRuntime):
                 if firsts[0]:
                     worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
                 else:
+                    step += 1
                     worker_rewards[worker_id] += rewards
                     if isinstance(next_states, dict):
                         for idx, (
