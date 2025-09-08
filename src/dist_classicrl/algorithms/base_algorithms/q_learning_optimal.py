@@ -245,7 +245,7 @@ class OptimalQLearningBase:
         values : NDArray[np.float64]
             List of Q-values to add.
         """
-        self.q_table[states, actions] += values
+        np.add.at(self.q_table, (states, actions), values)
 
     def save(self, filename: str) -> None:
         """
