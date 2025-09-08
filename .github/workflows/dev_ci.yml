@@ -1,0 +1,131 @@
+# GitHub Actions configuration **EXAMPLE**,
+# MODIFY IT ACCORDING TO YOUR NEEDS!
+# Reference: https://docs.github.com/en/actions
+
+name: dev_pr
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    outputs:
+      did_push: ${{ steps.push.outputs.did_push || 'false' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Check out the contributor's branch (the PR head), not the merge ref
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Stop if last commit is our autofix
+        id: skip_autofix
+        run: |
+          if git log -1 --pretty=%B | grep -q "\[autofix\]"; then
+            echo "skip=yes" >> $GITHUB_OUTPUT
+          else
+            echo "skip=no" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        if: steps.skip_autofix.outputs.skip == 'no'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PDM
+        if: steps.skip_autofix.outputs.skip == 'no'
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdm
+
+      - name: Install dependencies
+        if: steps.skip_autofix.outputs.skip == 'no'
+        run: |
+          pdm install -G format
+
+      - name: Pyupgrade
+        if: steps.skip_autofix.outputs.skip == 'no'
+        run: |
+          find src -name "*.py" \
+            -exec pdm run pyupgrade --py38-plus --exit-zero-even-if-changed {} +
+
+      - name: Ruff Auto-Fix
+        uses: chartboost/ruff-action@v1
+        with:
+          args: check . --fix > /dev/null 2>&1
+        continue-on-error: true
+
+      - name: Ruff Format Check
+        if: steps.skip_autofix.outputs.skip == 'no'
+        uses: chartboost/ruff-action@v1
+        with:
+          args: format .
+
+      - name: Docformatter
+        if: steps.skip_autofix.outputs.skip == 'no'
+        run: |
+          set +e
+          pdm run docformatter --in-place --recursive src/
+          code=$?
+          if [ "$code" != "0" ] && [ "$code" != "3" ]; then
+            exit $code
+          fi
+
+      - name: Commit changes if any
+        id: commit
+        if: steps.skip_autofix.outputs.skip == 'no'
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "style: apply autofix [autofix]"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push autofix with PAT
+        id: push
+        if: steps.skip_autofix.outputs.skip == 'no' && steps.commit.outputs.has_changes == 'true'
+        env:
+          PAT: ${{ secrets.PAT_AUTOFIX }}
+        run: |
+          git remote set-url origin "https://${PAT}@github.com/${{ github.repository }}.git"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          echo "did_push=true" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: needs.code-quality.outputs.did_push != 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PDM
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdm
+
+      - name: Install dependencies
+        run: |
+          pdm install -G test
+
+      - name: Run tests
+        run: |
+          export PYTHONPATH=$(pwd)/src
+          pdm run pytest --cov=src --cov-report=term-missing

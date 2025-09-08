@@ -19,6 +19,7 @@ repos:
   - id: debug-statements
   - id: detect-private-key
   - id: end-of-file-fixer
+    exclude: benchmark_results/
   - id: mixed-line-ending
     args: ['--fix=auto']  # replace 'auto' with 'lf' to enforce Linux/Mac line endings or 'crlf' for Windows
   - id: name-tests-test
@@ -26,6 +27,7 @@ repos:
     files: ^tests/dist_classicrl/.*\.py
   - id: pretty-format-json
     args: ['--autofix', '--no-ensure-ascii', '--no-sort-keys']
+    exclude: benchmark_results/
   - id: requirements-txt-fixer
   - id: trailing-whitespace
 
@@ -67,6 +69,16 @@ repos:
 #   rev: v1.1.402
 #   hooks:
 #   - id: pyright
+
+- repo: local
+  hooks:
+  - id: run-throughput-benchmarks
+    name: Run Throughput Benchmarks
+    entry: src/dist_classicrl/benchmarks/precommit_throughput_benchmarks.sh
+    language: system
+    always_run: true
+    pass_filenames: false
+    # files: ^src/dist_classicrl/benchmarks/.*\.py
 
 ##########################################
 ## Everything below this line is unused ##

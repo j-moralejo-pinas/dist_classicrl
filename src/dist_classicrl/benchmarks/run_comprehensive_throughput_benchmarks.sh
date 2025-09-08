@@ -103,9 +103,9 @@ echo "=========================================="
 echo "SINGLE THREAD EXPERIMENTS"
 echo "=========================================="
 
-single_thread_agents=(1 2 4 8 16 32 64)
+n_agents=(1 2 4 8 16 32 64 128)
 
-for agents in "${single_thread_agents[@]}"; do
+for agents in "${n_agents[@]}"; do
     total_experiments=$((total_experiments + 1))
     if run_benchmark "single_thread" $agents 1 "Single-thread with $agents agents"; then
         completed_experiments=$((completed_experiments + 1))
@@ -122,16 +122,15 @@ echo "PARALLEL EXPERIMENTS - GRID SEARCH"
 echo "=========================================="
 
 # Define arrays for grid search
-parallel_agents=(1 2 4 8 16 32 64)
 parallel_processes=(1 2 4 8 16)
 
 echo "Testing all combinations of agents and processes for parallel runtime..."
-echo "Agents: ${parallel_agents[*]}"
+echo "Agents: ${n_agents[*]}"
 echo "Processes: ${parallel_processes[*]}"
-echo "Total parallel combinations: $((${#parallel_agents[@]} * ${#parallel_processes[@]}))"
+echo "Total parallel combinations: $((${#n_agents[@]} * ${#parallel_processes[@]}))"
 echo ""
 
-for agents in "${parallel_agents[@]}"; do
+for agents in "${n_agents[@]}"; do
     for processes in "${parallel_processes[@]}"; do
         total_experiments=$((total_experiments + 1))
         if run_benchmark "parallel" $agents $processes "Parallel with $agents agents, $processes processes"; then
@@ -150,16 +149,15 @@ echo "DISTRIBUTED EXPERIMENTS - GRID SEARCH"
 echo "=========================================="
 
 # Define arrays for grid search
-distributed_agents=(16 32 64)
 distributed_ranks=(2 3 5 8)
 
 echo "Testing all combinations of agents and MPI ranks for distributed runtime..."
-echo "Agents: ${distributed_agents[*]}"
+echo "Agents: ${n_agents[*]}"
 echo "MPI Ranks: ${distributed_ranks[*]}"
-echo "Total distributed combinations: $((${#distributed_agents[@]} * ${#distributed_ranks[@]}))"
+echo "Total distributed combinations: $((${#n_agents[@]} * ${#distributed_ranks[@]}))"
 echo ""
 
-for agents in "${distributed_agents[@]}"; do
+for agents in "${n_agents[@]}"; do
     for ranks in "${distributed_ranks[@]}"; do
         processes=$((ranks - 1))
         total_experiments=$((total_experiments + 1))
