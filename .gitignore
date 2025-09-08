@@ -55,7 +55,6 @@ MANIFEST
 # test*.py
 
 *.txt
-dev_tests/*
 
 # PyRight Local Config
 pyrightconfig.local.json

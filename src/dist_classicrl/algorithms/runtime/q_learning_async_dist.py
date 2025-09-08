@@ -195,20 +195,11 @@ class DistAsyncQLearning(BaseRuntime):
                 if not test_flag:
                     continue
                 assert data is not None, "Received None from worker"
-                (
-                    next_states,
-                    rewards,
-                    terminateds,
-                    truncateds,
-                    infos,
-                    # firsts,
-                ) = data
+                (next_states, rewards, terminateds, truncateds, infos) = data
                 actions = self._choose_actions(next_states)
                 comm.isend(actions, dest=worker_id + 1, tag=1)
                 requests[worker_id] = comm.irecv(source=worker_id + 1)
 
-                # if firsts[0]:
-                #     worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
                 if worker_prev_states[worker_id] is None:
                     worker_rewards[worker_id] = np.zeros(len(rewards), dtype=np.float32)
                 else:
@@ -339,13 +330,11 @@ class DistAsyncQLearning(BaseRuntime):
             np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
             np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
             infos,
-            # np.fromiter((True for _ in range(num_agents_or_envs)), dtype=np.bool),
         )
         comm.send(
             data_sent,
             dest=MASTER_RANK,
         )
-        # agent_first = np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool)
 
         while True:
             comm.Probe(source=MASTER_RANK, tag=MPI.ANY_TAG, status=status)
@@ -360,7 +349,6 @@ class DistAsyncQLearning(BaseRuntime):
                 terminated,
                 truncated,
                 infos,
-                # agent_first,
             )
 
             comm.send(data_sent, dest=MASTER_RANK)
