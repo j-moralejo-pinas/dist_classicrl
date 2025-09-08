@@ -183,9 +183,10 @@ class DistAsyncQLearning(BaseRuntime):
         num_workers = NUM_NODES - 1
         reward_history = []
         worker_rewards = [np.array(()) for _ in range(num_workers)]
-        worker_prev_states: list[NDArray[np.int32] | dict[str, NDArray[np.int32]]] = [
-            np.array(()) for _ in range(num_workers)
+        worker_prev_states: list[NDArray[np.int32] | dict[str, NDArray[np.int32]] | None] = [
+            None for _ in range(num_workers)
         ]
+        worker_prev_actions: list[NDArray[np.int32] | None] = [None for _ in range(num_workers)]
         requests = [comm.irecv(source=worker_id) for worker_id in range(1, num_workers + 1)]
         step = 0
         while step < steps:
@@ -194,39 +195,48 @@ class DistAsyncQLearning(BaseRuntime):
                 if not test_flag:
                     continue
                 assert data is not None, "Received None from worker"
-                next_states, rewards, terminateds, truncateds, infos, firsts = data
+                (
+                    next_states,
+                    rewards,
+                    terminateds,
+                    truncateds,
+                    infos,
+                    # firsts,
+                ) = data
                 actions = self._choose_actions(next_states)
                 comm.isend(actions, dest=worker_id + 1, tag=1)
                 requests[worker_id] = comm.irecv(source=worker_id + 1)
 
-                if firsts[0]:
-                    worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
+                # if firsts[0]:
+                #     worker_rewards[worker_id] = np.zeros(len(firsts), dtype=np.float32)
+                if worker_prev_states[worker_id] is None:
+                    worker_rewards[worker_id] = np.zeros(len(rewards), dtype=np.float32)
                 else:
                     step += 1
                     worker_rewards[worker_id] += rewards
                     if isinstance(next_states, dict):
+                        prev_states = worker_prev_states[worker_id]
+                        assert isinstance(prev_states, dict)
+                        prev_actions = worker_prev_actions[worker_id]
+                        assert prev_actions is not None
                         for idx, (
                             next_state,
                             next_action_mask,
                             reward,
                             terminated,
-                            action,
                         ) in enumerate(
                             zip(
                                 next_states["observation"],
                                 next_states["action_mask"],
                                 rewards,
                                 terminateds,
-                                actions,
                                 strict=True,
                             )
                         ):
-                            prev_states = worker_prev_states[worker_id]
-                            assert isinstance(prev_states, dict)
                             self.experience_queue.put(
                                 (
                                     prev_states["observation"][idx],
-                                    action,
+                                    prev_actions[idx],
                                     reward,
                                     {
                                         "observation": next_state,
@@ -236,25 +246,29 @@ class DistAsyncQLearning(BaseRuntime):
                                 )
                             )
                     else:
+                        prev_states = worker_prev_states[worker_id]
+                        assert prev_states is not None
+                        assert not isinstance(prev_states, dict)
+                        prev_actions = worker_prev_actions[worker_id]
+                        assert prev_actions is not None
                         for idx, (
                             next_state,
                             reward,
                             terminated,
-                            action,
-                        ) in enumerate(
-                            zip(next_states, rewards, terminateds, actions, strict=True)
-                        ):
-                            prev_states = worker_prev_states[worker_id]
-                            assert not isinstance(prev_states, dict)
+                        ) in enumerate(zip(next_states, rewards, terminateds, strict=True)):
                             self.experience_queue.put(
                                 (
                                     prev_states[idx],
-                                    action,
+                                    prev_actions[idx],
                                     reward,
                                     next_state,
                                     terminated,
                                 )
                             )
+
+                # Track previous state/action for the next transition
+                worker_prev_states[worker_id] = next_states
+                worker_prev_actions[worker_id] = actions
 
                 for idx, (terminated, truncated) in enumerate(
                     zip(terminateds, truncateds, strict=True)
@@ -263,7 +277,6 @@ class DistAsyncQLearning(BaseRuntime):
                         reward_history.append(worker_rewards[worker_id][idx])
                         worker_rewards[worker_id][idx] = 0
 
-                worker_prev_states[worker_id] = next_states
                 if step >= steps:
                     self.experience_queue.put(None)
                     break
@@ -319,19 +332,20 @@ class DistAsyncQLearning(BaseRuntime):
         else:
             states = curr_state_dict["states"]
             infos = curr_state_dict["infos"]
+
         data_sent = (
             states,
             np.fromiter((0.0 for _ in range(num_agents_or_envs)), dtype=np.float32),
             np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
             np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
             infos,
-            np.fromiter((True for _ in range(num_agents_or_envs)), dtype=np.bool),
+            # np.fromiter((True for _ in range(num_agents_or_envs)), dtype=np.bool),
         )
         comm.send(
             data_sent,
             dest=MASTER_RANK,
         )
-        agent_first = np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool)
+        # agent_first = np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool)
 
         while True:
             comm.Probe(source=MASTER_RANK, tag=MPI.ANY_TAG, status=status)
@@ -346,7 +360,7 @@ class DistAsyncQLearning(BaseRuntime):
                 terminated,
                 truncated,
                 infos,
-                agent_first,
+                # agent_first,
             )
 
             comm.send(data_sent, dest=MASTER_RANK)
