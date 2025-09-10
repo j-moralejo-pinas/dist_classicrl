@@ -314,7 +314,7 @@ class BaseRuntime(ABC):
         n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
-        for _ in range(steps):
+        for _ in range(0, steps, n_agents):
             if isinstance(states, dict):
                 actions = self.algorithm.choose_actions(
                     states=states["observation"],

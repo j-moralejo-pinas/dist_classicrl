@@ -136,7 +136,7 @@ class DistAsyncQLearning(BaseRuntime):
                     if next_action_masks_batch
                     else np.fromiter(next_state_batch, dtype=np.int32)
                 )
-                np_terminated_batch = np.fromiter(terminated_batch, dtype=np.bool)
+                np_terminated_batch = np.fromiter(terminated_batch, dtype=bool)
 
                 self._learn(
                     np_state_batch,
@@ -327,8 +327,8 @@ class DistAsyncQLearning(BaseRuntime):
         data_sent = (
             states,
             np.fromiter((0.0 for _ in range(num_agents_or_envs)), dtype=np.float32),
-            np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
-            np.fromiter((False for _ in range(num_agents_or_envs)), dtype=np.bool),
+            np.fromiter((False for _ in range(num_agents_or_envs)), dtype=bool),
+            np.fromiter((False for _ in range(num_agents_or_envs)), dtype=bool),
             infos,
         )
         comm.send(
