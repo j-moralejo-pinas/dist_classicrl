@@ -1,66 +1,56 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Test runner script for Q-learning runtime algorithms
-# This script runs both regular pytest tests and MPI tests
+# Run the distributed pytest suite using MPI with 2 and 3 ranks.
+# Usage:
+#   bash run_runtime_tests.sh [additional pytest args]
 
-echo "=== Running Q-learning Runtime Tests ==="
+[[ "${DEBUG:-}" == "1" ]] && set -x
 
-# Set PYTHONPATH to include src directory
-export PYTHONPATH=$(pwd)/src:$PYTHONPATH
-
-echo "PYTHONPATH: $PYTHONPATH"
-echo ""
-
-# Run single-thread tests
-echo "1. Running SingleThreadQLearning tests..."
-python -m pytest tests/dist_classicrl/algorithms/runtime/test_q_learning_single_thread.py -v
-if [ $? -ne 0 ]; then
-    echo "SingleThreadQLearning tests failed!"
-    exit 1
-fi
-echo ""
-
-# Run parallel tests
-echo "2. Running ParallelQLearning tests..."
-python -m pytest tests/dist_classicrl/algorithms/runtime/test_q_learning_parallel.py -v
-if [ $? -ne 0 ]; then
-    echo "ParallelQLearning tests failed!"
-    exit 1
-fi
-echo ""
-
-# Run async distributed tests (non-MPI)
-echo "3. Running DistAsyncQLearning tests (non-MPI)..."
-python -m pytest tests/dist_classicrl/algorithms/runtime/test_q_learning_async_dist.py::TestDistAsyncQLearning -v
-if [ $? -ne 0 ]; then
-    echo "DistAsyncQLearning non-MPI tests failed!"
-    exit 1
-fi
-echo ""
-
-# Check if MPI is available
-if command -v mpirun &> /dev/null; then
-    echo "4. Running DistAsyncQLearning MPI tests..."
-
-    # Run MPI-specific tests with pytest
-    mpirun -n 3 python -m pytest tests/dist_classicrl/algorithms/runtime/test_q_learning_async_dist.py::TestDistAsyncQLearningMPI -v
-    if [ $? -ne 0 ]; then
-        echo "DistAsyncQLearning MPI tests failed!"
-        exit 1
-    fi
-
-    echo ""
-    echo "5. Running DistAsyncQLearning integration test..."
-
-    # Run integration test
-    mpirun -n 3 python tests/dist_classicrl/algorithms/runtime/test_q_learning_async_dist.py
-    if [ $? -ne 0 ]; then
-        echo "DistAsyncQLearning integration test failed!"
-        exit 1
-    fi
+# Resolve repo root (prefer git, fallback to relative path)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if ROOT_DIR=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null); then
+	:
 else
-    echo "4. MPI not available, skipping MPI-specific tests"
+	ROOT_DIR="$(realpath "$SCRIPT_DIR/../../../..")"
 fi
 
-echo ""
-echo "=== All tests completed successfully! ==="
+# Locate MPI launcher
+if command -v mpiexec >/dev/null 2>&1; then
+	MPI_RUN=mpiexec
+elif command -v mpirun >/dev/null 2>&1; then
+	MPI_RUN=mpirun
+else
+	echo "Error: mpiexec/mpirun not found in PATH" >&2
+	exit 127
+fi
+
+# Recommended to avoid CPU oversubscription in CI/containers
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export PYTHONUNBUFFERED=1
+
+TEST_FILE="$ROOT_DIR/tests/dist_classicrl/algorithms/runtime/test_q_learning_distributed.py"
+PYTEST_BASE_ARGS=("-q" "-rA" "$TEST_FILE")
+
+# Allow passing through extra pytest args
+if [[ $# -gt 0 ]]; then
+	PYTEST_ARGS=("${PYTEST_BASE_ARGS[@]}" "$@")
+else
+	PYTEST_ARGS=("${PYTEST_BASE_ARGS[@]}")
+fi
+
+echo "[MPI 2 ranks] Running: $MPI_RUN -n 2 python -m pytest ${PYTEST_ARGS[*]}"
+$MPI_RUN -n 2 python -m pytest "${PYTEST_ARGS[@]}"
+rc2=$?
+
+echo "[MPI 3 ranks] Running: $MPI_RUN -n 3 python -m pytest ${PYTEST_ARGS[*]}"
+$MPI_RUN -n 3 python -m pytest "${PYTEST_ARGS[@]}"
+rc3=$?
+
+if [[ $rc2 -ne 0 || $rc3 -ne 0 ]]; then
+	echo "Distributed tests failed: rc2=$rc2 rc3=$rc3" >&2
+	exit 1
+fi
+
+echo "Distributed tests passed for 2 and 3 MPI ranks."
+

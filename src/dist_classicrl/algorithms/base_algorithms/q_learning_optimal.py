@@ -830,6 +830,8 @@ class OptimalQLearningBase:
         """
         Update Q-table based on the agents' experiences.
 
+        This version can't handle multiple updates to the same (state, action) pair.
+
         Parameters
         ----------
         states : NDArray[np.int32]
@@ -919,9 +921,10 @@ class OptimalQLearningBase:
         next_action_masks : NDArray[np.int32] | None
             Masks for valid actions in the next states, by default None.
         """
-        if len(states) > NUM_STATES_LEARN_THRESHOLD:
-            self.learn_vec(states, actions, rewards, next_states, terminated, lr, next_action_masks)
-        else:
-            self.learn_iter(
-                states, actions, rewards, next_states, terminated, lr, next_action_masks
-            )
+        # This version can't handle multiple updates to the same (state, action) pair.
+        #' if len(states) > NUM_STATES_LEARN_THRESHOLD:
+        #'     self.learn_vec(states, actions, rewards, next_states, terminated, lr, next_action_masks)
+        #' else:
+        self.learn_iter(
+            states, actions, rewards, next_states, terminated, lr, next_action_masks
+        )
