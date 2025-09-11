@@ -29,7 +29,7 @@ fi
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
 export PYTHONUNBUFFERED=1
 
-TEST_FILE="$ROOT_DIR/tests/dist_classicrl/algorithms/runtime/test_q_learning_distributed.py"
+TEST_FILE="$ROOT_DIR/tests/dist_tests/test_q_learning_distributed.py"
 PYTEST_BASE_ARGS=("-q" "-rA" "$TEST_FILE")
 
 # Allow passing through extra pytest args
