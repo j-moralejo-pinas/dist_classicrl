@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Throughput Benchmark Analysis and Visualization Script.
 
@@ -146,7 +145,7 @@ def plot_parallel_scaling(data: list[dict], output_dir: Path) -> None:
         process_groups[processes].sort(key=lambda x: x["num_agents"])
 
     # Create the plot
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    _, ax = plt.subplots(1, 1, figsize=(12, 8))
 
     # Generate colors for different process counts
     process_counts = sorted(process_groups.keys())
