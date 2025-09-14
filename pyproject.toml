@@ -40,7 +40,6 @@ local_scheme = "node-and-date"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
     "pyright",
     "pre-commit",
     "ruff",
@@ -48,6 +47,20 @@ dev = [
     "docformatter",
     "pytest",
     "pytest-cov",
+    "pyupgrade",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+code-quality = [
+    "ruff",
+    "pydoclint",
+    "pyright",
+]
+format = [
+    "ruff",
+    "docformatter",
     "pyupgrade",
 ]
 docs = [
