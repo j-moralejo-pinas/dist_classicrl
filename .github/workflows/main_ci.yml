@@ -2,12 +2,12 @@
 # MODIFY IT ACCORDING TO YOUR NEEDS!
 # Reference: https://docs.github.com/en/actions
 
-name: master_pr
+name: main_pr
 
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   check-source-branch:
