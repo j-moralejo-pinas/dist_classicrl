@@ -175,7 +175,7 @@ def test_apply_move() -> None:
     )
     return_value = env._apply_move(7, env.agent_mark)
     assert return_value is not None, "Agent should win with a vertical line."
-    obs, rew, term, trunc, info = return_value
+    obs, rew, term, trunc, _ = return_value
     assert np.array_equal(
         obs["observation"],
         np.array([0, env.agent_mark, 0, 0, env.agent_mark, 0, 0, env.agent_mark, 0]),
