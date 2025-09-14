@@ -119,6 +119,9 @@ convention = "numpy"
 
 [tool.pydoclint]
 style = 'numpy'
+exclude = [
+    "^src/dist_classicrl/old/",
+]
 
 [tool.docformatter]
 style = 'numpy'

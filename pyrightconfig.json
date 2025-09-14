@@ -4,7 +4,8 @@
     "src"
   ],
   "exclude": [
-    "src/dist_classicrl/old"
+    "src/dist_classicrl/old",
+    "dev_tests"
   ],
   "extraPaths": [
     "src"

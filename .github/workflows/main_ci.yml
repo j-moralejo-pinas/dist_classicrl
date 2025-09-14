@@ -140,7 +140,7 @@ jobs:
 
       - name: Run pydoclint
         run: |
-          pydoclint src/
+          pdm run pydoclint src/
 
       - name: Ruff Check
         uses: chartboost/ruff-action@v1
@@ -211,4 +211,3 @@ jobs:
             echo "Distributed tests failed: rc2=$rc2" >&2
             exit 1
           fi
-
