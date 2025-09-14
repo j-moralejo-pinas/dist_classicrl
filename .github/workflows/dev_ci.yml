@@ -116,10 +116,10 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install MPI
+      - name: Install MPI (OpenMPI)
         run: |
           sudo apt-get update
-          sudo apt-get install libopenmpi-dev openmpi-bin
+          sudo apt-get install -y libopenmpi-dev openmpi-bin
 
       - name: Install PDM
         run: |
@@ -132,7 +132,41 @@ jobs:
 
       - name: Run tests
         run: |
+          set -euo pipefail
           export PYTHONPATH=$(pwd)/src
+          export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+          export PYTHONUNBUFFERED=1
+
+          # Run regular tests with coverage
           pdm run pytest --cov=src --cov-report=term-missing
-          pdm run bash tests/dist_tests/run_runtime_tests.sh
+
+          # Discover MPI launcher
+          if command -v mpiexec >/dev/null 2>&1; then
+            MPI_RUN=mpiexec
+          elif command -v mpirun >/dev/null 2>&1; then
+            MPI_RUN=mpirun
+          else
+            echo "Error: mpiexec/mpirun not found in PATH" >&2
+            exit 127
+          fi
+
+          # Use PDM's Python interpreter inside MPI ranks
+          PY="$(pdm info --python)"
+          TEST_FILE="tests/dist_tests/test_q_learning_distributed.py"
+          PYTEST_ARGS=("-q" "-rA" "$TEST_FILE")
+
+          set +e
+          echo "[MPI 2 ranks] Running: $MPI_RUN -n 2 $PY -m pytest ${PYTEST_ARGS[*]}"
+          $MPI_RUN -n 2 "$PY" -m pytest "${PYTEST_ARGS[@]}"
+          rc2=$?
+
+          echo "[MPI 3 ranks] Running: $MPI_RUN -n 3 $PY -m pytest ${PYTEST_ARGS[*]}"
+          $MPI_RUN -n 3 "$PY" -m pytest "${PYTEST_ARGS[@]}"
+          rc3=$?
+          set -e
+
+          if [ $rc2 -ne 0 ] || [ $rc3 -ne 0 ]; then
+            echo "Distributed tests failed: rc2=$rc2 rc3=$rc3" >&2
+            exit 1
+          fi
 
