@@ -1,6 +1,5 @@
 """Dummy vectorized environment wrapper for testing purposes."""
 
-
 import numpy as np
 from gymnasium import Env, Wrapper
 from gymnasium.vector import VectorEnv

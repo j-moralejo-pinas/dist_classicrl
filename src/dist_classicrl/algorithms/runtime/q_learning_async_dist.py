@@ -195,7 +195,7 @@ class DistAsyncQLearning(BaseRuntime):
                 if not test_flag:
                     continue
                 assert data is not None, "Received None from worker"
-                (next_states, rewards, terminateds, truncateds, infos) = data
+                (next_states, rewards, terminateds, truncateds, _infos) = data
                 actions = self._choose_actions(next_states)
                 comm.isend(actions, dest=worker_id + 1, tag=1)
                 requests[worker_id] = comm.irecv(source=worker_id + 1)

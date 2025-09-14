@@ -326,7 +326,7 @@ class BaseRuntime(ABC):
                 actions = self.algorithm.choose_actions(
                     states, exploration_rate=0.0, deterministic=True
                 )
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
+            next_states, rewards, terminateds, truncateds, _infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
             for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):
@@ -372,7 +372,7 @@ class BaseRuntime(ABC):
                 actions = self.algorithm.choose_actions(
                     states, exploration_rate=0.0, deterministic=True
                 )
-            next_states, rewards, terminateds, truncateds, infos = env.step(actions)
+            next_states, rewards, terminateds, truncateds, _infos = env.step(actions)
             agent_rewards += rewards
             states = next_states
             for i, (terminated, truncated) in enumerate(zip(terminateds, truncateds, strict=False)):

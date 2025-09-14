@@ -97,7 +97,7 @@ def plot_single_thread_scaling(data: list[dict], output_dir: Path) -> None:
     throughput = [result["throughput"] for result in data]
 
     # Create the plot
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    _fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
     ax.plot(
         agents,
@@ -202,7 +202,7 @@ def plot_parallel_scaling(data: list[dict], output_dir: Path) -> None:
         throughput_matrix[agent_idx, process_idx] = result["throughput"]
 
     # Create the heatmap
-    fig, ax = plt.subplots(figsize=(12, 8))
+    _fig, ax = plt.subplots(figsize=(12, 8))
 
     im = ax.imshow(throughput_matrix, cmap="viridis", aspect="auto")
 
@@ -265,7 +265,7 @@ def plot_parallel_heatmap(data: list[dict], output_dir: Path) -> None:
         throughput_matrix[agent_idx, process_idx] = result["throughput"]
 
     # Create the heatmap
-    fig, ax = plt.subplots(figsize=(12, 8))
+    _fig, ax = plt.subplots(figsize=(12, 8))
 
     im = ax.imshow(throughput_matrix, cmap="viridis", aspect="auto")
 
@@ -322,7 +322,7 @@ def plot_distributed_scaling(data: list[dict], output_dir: Path) -> None:
         process_groups[processes].sort(key=lambda x: x["num_agents"])
 
     # Create the plot
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    _fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 
     # Generate colors for different process counts
     process_counts = sorted(process_groups.keys())
@@ -381,7 +381,7 @@ def plot_distributed_heatmap(data: list[dict], output_dir: Path) -> None:
         throughput_matrix[agent_idx, process_idx] = result["throughput"]
 
     # Create the heatmap
-    fig, ax = plt.subplots(figsize=(12, 8))
+    _fig, ax = plt.subplots(figsize=(12, 8))
 
     im = ax.imshow(throughput_matrix, cmap="plasma", aspect="auto")
 

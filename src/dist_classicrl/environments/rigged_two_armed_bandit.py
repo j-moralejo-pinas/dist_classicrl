@@ -80,9 +80,15 @@ class RiggedTwoArmedBanditEnv(gym.Env):
         return obs, reward, terminated, truncated, info
 
     def render(self) -> None:
-        """Render the environment. Not implemented."""
+        """
+        Render the environment.
 
+        Not implemented.
+        """
 
     def close(self) -> None:
-        """Close the environment. Not implemented."""
+        """
+        Close the environment.
 
+        Not implemented.
+        """

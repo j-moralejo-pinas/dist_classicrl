@@ -102,12 +102,14 @@ def test_parallel_run_steps_random_actions_and_updates() -> None:
     """Parallel runtime (1 worker) updates Q and schedules and returns states."""
     # Parallel runtime with 1 worker, each worker has 1 vectorized env
     _, rt = _make_algo_and_runtime(lr0=1.0, eps0=1.0, runtime_cls=ParallelQLearning)
-    envs = [_make_dummy_vec_env(
-        n_envs=1, env_class=RiggedTwoArmedBanditEnv, env_kwargs={"episode_len": 5}
-    )]
+    envs = [
+        _make_dummy_vec_env(
+            n_envs=1, env_class=RiggedTwoArmedBanditEnv, env_kwargs={"episode_len": 5}
+        )
+    ]
     try:
         rt.init_training()
-        avg, history, returned_envs, states_list = rt.run_steps(
+        avg, history, _returned_envs, states_list = rt.run_steps(
             steps=5, env=envs, curr_state_dict=None
         )
         # Rewards
@@ -130,13 +132,16 @@ def test_parallel_run_steps_random_actions_and_updates() -> None:
 def test_parallel_run_steps_two_envs_10_steps() -> None:
     """Two envs over 10 steps yield two full episodes with correct schedule updates."""
     # Two environments, 10 total steps split evenly -> 5 steps per env
-    algo, rt = _make_algo_and_runtime(lr0=1.0, eps0=1.0, runtime_cls=ParallelQLearning)
-    envs = [_make_dummy_vec_env(
-        n_envs=1, env_class=RiggedTwoArmedBanditEnv, env_kwargs={"episode_len": 5}
-    ) for _ in range(2)]
+    _algo, rt = _make_algo_and_runtime(lr0=1.0, eps0=1.0, runtime_cls=ParallelQLearning)
+    envs = [
+        _make_dummy_vec_env(
+            n_envs=1, env_class=RiggedTwoArmedBanditEnv, env_kwargs={"episode_len": 5}
+        )
+        for _ in range(2)
+    ]
     try:
         rt.init_training()
-        avg, history, returned_envs, states_list = rt.run_steps(
+        avg, history, _returned_envs, states_list = rt.run_steps(
             steps=10, env=envs, curr_state_dict=None
         )
         # Each env completes exactly one episode of length 5 with reward 1 per step

@@ -99,7 +99,7 @@ SIZE = COMM.Get_size()
 def test_distributed_train_skips_validation_and_updates_q_table() -> None:
     """Training with validation interval > steps skips validation and updates Q-table."""
     # Algorithm configured to always explore and pick action 1
-    algo, agent = _make_algo_and_runtime(DistAsyncQLearning)
+    _algo, agent = _make_algo_and_runtime(DistAsyncQLearning)
     # Training and validation setup
     steps = 5
     env = _make_dummy_vec_env(
@@ -150,7 +150,7 @@ def test_distributed_train_skips_validation_and_updates_q_table() -> None:
 def test_distributed_train_with_validation_collects_val_history() -> None:
     """Training with validation collects validation reward history on master rank."""
     # Configure algorithm to always explore during training (action 1)
-    algo, agent = _make_algo_and_runtime(DistAsyncQLearning)
+    _algo, agent = _make_algo_and_runtime(DistAsyncQLearning)
 
     steps = 6
     env = _make_dummy_vec_env(
