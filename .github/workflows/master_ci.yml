@@ -181,4 +181,4 @@ jobs:
         run: |
           export PYTHONPATH=$(pwd)/src
           pdm run pytest --cov=src --cov-report=term-missing
-          bash tests/dist_tests/run_runtime_tests.sh
+          pdm run bash tests/dist_tests/run_runtime_tests.sh
