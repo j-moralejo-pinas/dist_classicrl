@@ -40,7 +40,6 @@ local_scheme = "node-and-date"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
     "pyright",
     "pre-commit",
     "ruff",
@@ -49,7 +48,21 @@ dev = [
     "pytest",
     "pytest-cov",
     "pyupgrade",
-] # , "isort", "black"
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+code-quality = [
+    "ruff",
+    "pydoclint",
+    "pyright",
+]
+format = [
+    "ruff",
+    "docformatter",
+    "pyupgrade",
+]
 docs = [
     "sphinx",
     "sphinx-autoapi",
@@ -66,19 +79,6 @@ testpaths = ["tests/dist_classicrl"]
 [tool.coverage.run]
 source = ["src"]
 omit = ["src/dist_classicrl/old/*"]
-
-[tool.black]
-line-length = 100
-
-[tool.isort]
-profile = "black"
-line_length = 100
-
-[tool.pylint."Main"]
-source-roots = ["src"]
-
-[tool.pylint."Format"]
-max-line-length = 100
 
 [tool.ruff]
 fix = true
@@ -102,7 +102,7 @@ ignore = [
     "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
 ]
 select = ["ALL"]
-exclude = ["src/dist_classicrl/old/*", "tests/*", "docs/*"]
+exclude = ["src/dist_classicrl/old/*", "docs/*", "dev_tests/old/*"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100

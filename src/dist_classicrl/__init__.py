@@ -16,15 +16,24 @@ Key Features
 
 Modules
 -------
-algorithms: Core reinforcement learning algorithm implementations
-    - base_algorithms: Core Q-Learning implementations with optimizations
-    - runtime: Execution modes (single-thread, parallel, distributed)
-    - buffers: Experience replay and buffer management
-environments: Environment implementations and interfaces
-    - custom_env: Abstract base class for custom environments
-    - tiktaktoe_mod: TicTacToe environment for testing and demos
-wrappers: Environment wrappers for action/observation space transformations
-utils: Utility functions for multi-discrete action spaces
+algorithms
+    Core reinforcement learning algorithm implementations:
+
+    * ``base_algorithms`` - Core Q-Learning implementations with optimizations
+    * ``runtime`` - Execution modes (single-thread, parallel, distributed)
+    * ``buffers`` - Experience replay and buffer management
+
+environments
+    Environment implementations and interfaces:
+
+    * ``custom_env`` - Abstract base class for custom environments
+    * ``tiktaktoe_mod`` - TicTacToe environment for testing and demos
+
+wrappers
+    Environment wrappers for action/observation space transformations.
+
+utils
+    Utility functions for multi-discrete action spaces.
 
 Examples
 --------

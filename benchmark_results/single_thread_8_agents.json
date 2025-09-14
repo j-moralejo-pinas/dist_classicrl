@@ -1,0 +1,13 @@
+{
+  "runtime": "single_thread",
+  "total_steps": 1000,
+  "effective_steps": 8000,
+  "elapsed_time": 0.48061540798516944,
+  "throughput": 16645.32569510726,
+  "step_multiplier": 8,
+  "timestamp": 1757854902.4636936,
+  "num_agents": 8,
+  "num_processes": 1,
+  "mpi_rank": 0,
+  "mpi_size": 1
+}

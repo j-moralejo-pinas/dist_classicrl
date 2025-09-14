@@ -41,6 +41,10 @@ class MultiAgentQLearningLists:
         Size of the action space.
     learning_rate : float
         Learning rate for Q-learning.
+    learning_rate_decay : float
+        Decay rate for learning rate, by default 0.9999.
+    min_learning_rate : float
+        Minimum learning rate, by default 1e-5.
     discount_factor : float
         Discount factor for future rewards.
     exploration_rate : float
@@ -69,6 +73,8 @@ class MultiAgentQLearningLists:
         state_size: int,
         action_size: int,
         learning_rate: float = 0.1,
+        learning_rate_decay: float = 0.9999,
+        min_learning_rate: float = 1e-5,
         discount_factor: float = 0.97,
         exploration_rate: float = 1.0,
         exploration_decay: float = 0.999,
@@ -78,6 +84,8 @@ class MultiAgentQLearningLists:
         self.state_size = state_size
         self.action_size = action_size
         self.learning_rate = learning_rate
+        self.learning_rate_decay = learning_rate_decay
+        self.min_learning_rate = min_learning_rate
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
         self.exploration_decay = exploration_decay
@@ -330,4 +338,8 @@ class MultiAgentQLearningLists:
 
         self.exploration_rate = max(
             self.min_exploration_rate, self.exploration_rate * self.exploration_decay
+        )
+
+        self.learning_rate = max(
+            self.min_learning_rate, self.learning_rate * self.learning_rate_decay
         )

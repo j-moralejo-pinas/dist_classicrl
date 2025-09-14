@@ -1,4 +1,4 @@
-"""Test suite for the TicTacToe environment implementation."""
+"""Unit tests for :class:`dist_classicrl.environments.tiktaktoe_mod.TicTacToeEnv`."""
 
 import random
 
@@ -231,7 +231,7 @@ def test_apply_move() -> None:
     )
     return_value = env._apply_move(8, env.machine_mark)
     assert return_value is not None, "Game should end in a draw."
-    obs, rew, term, trunc, info = return_value
+    obs, rew, term, trunc, _info = return_value
     assert np.array_equal(
         obs["observation"],
         np.array(
@@ -267,7 +267,7 @@ def test_apply_move() -> None:
 def test_reset() -> None:
     """Test environment reset functionality and initial state validation."""
     env = TicTacToeEnv()
-    obs, info = env.reset()
+    obs, _info = env.reset()
     assert "observation" in obs
     assert "action_mask" in obs
     assert obs["observation"].shape == (9,)
@@ -282,7 +282,7 @@ def test_step() -> None:
     env.board = np.zeros((3, 3), dtype=np.int8)
     env.agent_mark = 1
     env.machine_mark = 2
-    obs, reward, terminated, truncated, info = env.step(0)
+    obs, _reward, _terminated, _truncated, _info = env.step(0)
     assert sum(obs["action_mask"]) == 7, (
         "There should be 7 valid moves after the first agent and machine moves."
     )
@@ -309,5 +309,5 @@ def test_running_environment() -> None:
                 break
             # For demonstration, choose the first valid move.
             action = random.choice(valid_moves)
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, _reward, terminated, _truncated, _info = env.step(action)
             env.render()
