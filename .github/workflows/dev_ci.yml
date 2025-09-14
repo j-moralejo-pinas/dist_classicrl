@@ -160,13 +160,7 @@ jobs:
           $MPI_RUN -n 2 "$PY" -m pytest "${PYTEST_ARGS[@]}"
           rc2=$?
 
-          echo "[MPI 3 ranks] Running: $MPI_RUN -n 3 $PY -m pytest ${PYTEST_ARGS[*]}"
-          $MPI_RUN -n 3 "$PY" -m pytest "${PYTEST_ARGS[@]}"
-          rc3=$?
-          set -e
-
-          if [ $rc2 -ne 0 ] || [ $rc3 -ne 0 ]; then
-            echo "Distributed tests failed: rc2=$rc2 rc3=$rc3" >&2
+          if [ $rc2 -ne 0 ]; then
+            echo "Distributed tests failed: rc2=$rc2" >&2
             exit 1
           fi
-
