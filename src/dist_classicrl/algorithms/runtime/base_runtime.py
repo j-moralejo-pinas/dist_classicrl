@@ -310,7 +310,7 @@ class BaseRuntime(ABC):
         tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-        states, infos = env.reset(seed=42)
+        states, _ = env.reset(seed=42)
         n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []
@@ -355,7 +355,7 @@ class BaseRuntime(ABC):
         tuple[float, list[float]]
             Total rewards obtained by the agent and rewards for each agent.
         """
-        states, infos = env.reset(seed=42)
+        states, _ = env.reset(seed=42)
         n_agents = len(states["observation"]) if isinstance(states, dict) else len(states)
         agent_rewards = np.zeros(n_agents, dtype=np.float32)
         reward_history = []

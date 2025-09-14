@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.13"
-dependencies = ["gymnasium", "mpi4py", "numpy"]
+dependencies = ["gymnasium", "matplotlib", "mpi4py", "numpy"]
 
 [project.urls]
 Homepage = "https://github.com/j-moralejo-pinas/dist_classicrl"
@@ -119,6 +119,9 @@ convention = "numpy"
 
 [tool.pydoclint]
 style = 'numpy'
+exclude = [
+    "^src/dist_classicrl/old/",
+]
 
 [tool.docformatter]
 style = 'numpy'

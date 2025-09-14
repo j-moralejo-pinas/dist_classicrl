@@ -2,12 +2,12 @@
 # MODIFY IT ACCORDING TO YOUR NEEDS!
 # Reference: https://docs.github.com/en/actions
 
-name: master_pr
+name: main_pr
 
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   check-source-branch:
@@ -140,7 +140,7 @@ jobs:
 
       - name: Run pydoclint
         run: |
-          pydoclint src/
+          pdm run pydoclint src/
 
       - name: Ruff Check
         uses: chartboost/ruff-action@v1
@@ -211,4 +211,3 @@ jobs:
             echo "Distributed tests failed: rc2=$rc2" >&2
             exit 1
           fi
-

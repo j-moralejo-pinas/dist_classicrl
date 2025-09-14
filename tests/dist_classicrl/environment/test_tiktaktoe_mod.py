@@ -143,7 +143,7 @@ def test_get_machine_move() -> None:
             [2, 1, 1],
         ]
     )
-    with pytest.raises(AssertionError, match="There should be at least one valid move."):
+    with pytest.raises(AssertionError, match="There should be at least one valid move\\."):
         env._get_machine_move()
 
 
@@ -175,7 +175,7 @@ def test_apply_move() -> None:
     )
     return_value = env._apply_move(7, env.agent_mark)
     assert return_value is not None, "Agent should win with a vertical line."
-    obs, rew, term, trunc, info = return_value
+    obs, rew, term, trunc, _ = return_value
     assert np.array_equal(
         obs["observation"],
         np.array([0, env.agent_mark, 0, 0, env.agent_mark, 0, 0, env.agent_mark, 0]),
@@ -203,7 +203,7 @@ def test_apply_move() -> None:
     )
     return_value = env._apply_move(8, env.machine_mark)
     assert return_value is not None, "Machine should win with a diagonal line."
-    obs, rew, term, trunc, info = return_value
+    obs, rew, term, trunc, _ = return_value
     assert np.array_equal(
         obs["observation"],
         np.array([env.machine_mark, 0, 0, 0, env.machine_mark, 0, 0, 0, env.machine_mark]),
@@ -260,7 +260,7 @@ def test_apply_move() -> None:
             [0, 0, 0],
         ]
     )
-    with pytest.raises(AssertionError, match="Invalid move."):
+    with pytest.raises(AssertionError, match="Invalid move\\."):
         env._apply_move(0, env.machine_mark)
 
 
@@ -299,7 +299,7 @@ def test_running_environment() -> None:
     env = TicTacToeEnv()
 
     for i in range(100):
-        obs, info = env.reset(seed=i)
+        obs, _ = env.reset(seed=i)
         env.render()
 
         terminated = False
