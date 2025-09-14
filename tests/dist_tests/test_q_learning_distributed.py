@@ -13,6 +13,7 @@ from dist_classicrl.environments.rigged_two_armed_bandit import RiggedTwoArmedBa
 from dist_classicrl.schedules.constant_schedule import ConstantSchedule
 from dist_classicrl.schedules.linear_schedule import LinearSchedule
 from dist_classicrl.utils import _make_dummy_vec_env
+from dist_classicrl.wrappers.dummy_vec_wrapper import DummyVecWrapper
 
 
 def _make_algo_and_runtime(
@@ -35,7 +36,7 @@ def _make_algo_and_runtime(
     algo._rng = DeterministicRNG()  # type: ignore[assignment]
     algo._np_rng = DeterministicNPRNG()  # type: ignore[assignment]
     lr = ConstantSchedule(1.0)
-    eps = LinearSchedule(0, 1.0)
+    eps = LinearSchedule(1.0, 1.0)
     rt = runtime_cls(algorithm=algo, lr_schedule=lr, exploration_rate_schedule=eps)
     return algo, rt
 
@@ -141,7 +142,7 @@ def test_distributed_train_skips_validation_and_updates_q_table() -> None:
         # Workers: no histories; env and current state returned
         assert reward_history == []
         assert val_history == []
-        assert isinstance(ret_envs, RiggedTwoArmedBanditEnv)
+        assert isinstance(ret_envs, DummyVecWrapper)
         assert isinstance(curr_state, dict)
         assert "states" in curr_state
 
@@ -189,6 +190,6 @@ def test_distributed_train_with_validation_collects_val_history() -> None:
         # Workers return env/state; no histories
         assert reward_history == []
         assert val_history == []
-        assert isinstance(ret_envs, RiggedTwoArmedBanditEnv)
+        assert isinstance(ret_envs, DummyVecWrapper)
         assert isinstance(curr_state, dict)
         assert "states" in curr_state
