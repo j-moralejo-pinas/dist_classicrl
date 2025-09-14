@@ -14,7 +14,7 @@ The benchmarks evaluate three runtime configurations:
 * **Parallel**: Multi-process parallelization using Python's multiprocessing
 * **Distributed**: Distributed computing using MPI (Message Passing Interface)
 
-All benchmarks were conducted using Q-learning on a TicTacToe environment with 1000 training steps per configuration, measuring throughput in steps per second.
+All benchmarks were conducted using Q-learning on a TicTacToe environment, measuring throughput in steps per second.
 
 Benchmark Results
 =================
@@ -29,8 +29,7 @@ The single-thread runtime shows how performance scales with the number of agents
     :align: center
     :width: 600px
 
-This chart demonstrates that single-thread performance increases with more agents due to improved vectorization,
-reaching peak performance around 32-64 agents with approximately 21,813 steps/sec.
+This chart demonstrates that single-thread performance increases with more agents due to improved vectorization.
 
 Parallel Runtime Performance
 ----------------------------
@@ -46,7 +45,6 @@ Scaling Analysis
     :width: 600px
 
 This scaling chart shows how parallel performance varies with both the number of agents and processes.
-The optimal configuration achieves 131,417 steps/sec with 64 agents and 16 processes.
 
 Performance Heatmap
 ~~~~~~~~~~~~~~~~~~~
@@ -72,8 +70,7 @@ Scaling Analysis
     :align: center
     :width: 600px
 
-Distributed scaling shows consistent performance improvements with more agents and MPI ranks,
-achieving peak performance of 63,376 steps/sec with 64 agents and 7 processes.
+Distributed scaling shows consistent performance improvements with more agents and MPI ranks.
 
 Performance Heatmap
 ~~~~~~~~~~~~~~~~~~~
@@ -92,17 +89,12 @@ Key Insights
 1. **Parallel Superior Performance**: The parallel runtime achieves the highest peak throughput (131,417 steps/s),
     demonstrating excellent multiprocessing scalability.
 
-2. **Optimal Configurations**:
-    - Single-thread: Best with 64 agents
-    - Parallel: Best with 64 agents and 16 processes
-    - Distributed: Best with 64 agents and 7 MPI ranks
-
-3. **Scalability Patterns**:
+2. **Scalability Patterns**:
     - All runtimes benefit from increased agent counts
     - Parallel runtime shows optimal process counts (sweet spot around 8-16 processes)
     - Distributed runtime scales consistently but plateaus at higher rank counts
 
-4. **Efficiency Trade-offs**: While parallel runtime achieves highest peak performance,
+3. **Efficiency Trade-offs**: While parallel runtime achieves highest peak performance,
     distributed runtime provides more consistent scaling and is suitable for multi-machine deployments.
 
 Benchmark Methodology
@@ -110,11 +102,11 @@ Benchmark Methodology
 
 The benchmarks were conducted using the comprehensive benchmark script that tests various combinations of:
 
-- **Agents**: 1, 2, 4, 8, 16, 32, 64
+- **Agents**: 1, 2, 4, 8, 16, 32, 64, 128
 - **Processes** (Parallel): 1, 2, 4, 8, 16
 - **MPI Ranks** (Distributed): 2, 3, 5, 8
 
-Each configuration was run for 1000 training steps using Q-learning on a TicTacToe environment,
+Each configuration was run for the same number of training steps using Q-learning on a TicTacToe environment,
 with throughput measured as the number of environment steps processed per second.
 
 Hardware Configuration
@@ -149,8 +141,7 @@ To reproduce these benchmarks on your system, run:
     # Generate plots from results
     python src/dist_classicrl/benchmarks/generate_plots.py
 
-The benchmark script will automatically detect available resources and run appropriate configurations
-for single-thread, parallel, and distributed runtimes.
+You may need to adjust the number of agents, processes, and MPI ranks based on your hardware capabilities.
 
 .. note::
     Distributed benchmarks require MPI to be installed (e.g., ``mpirun`` command available).

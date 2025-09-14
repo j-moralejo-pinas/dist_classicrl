@@ -1,7 +1,4 @@
-import random
 import timeit
-
-import numpy as np
 
 # Define different selection methods
 test_where_choice = """
@@ -85,6 +82,5 @@ results_mask_selection = {
 }
 
 # Print results
-print("\nMask-Based Random Selection Performance Results:")
-for method, time_taken in results_mask_selection.items():
-    print(f"{method}: {time_taken:.6f} seconds")
+for _method, _time_taken in results_mask_selection.items():
+    pass

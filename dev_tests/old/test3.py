@@ -1,7 +1,4 @@
-import random
 import timeit
-
-import numpy as np
 
 # Define different selection methods
 test_loop_max_track = """
@@ -89,6 +86,5 @@ results_max_selection = {
 }
 
 # Print results
-print("\nMax Value Random Selection Performance Results:")
-for method, time_taken in results_max_selection.items():
-    print(f"{method}: {time_taken:.6f} seconds")
+for _method, _time_taken in results_max_selection.items():
+    pass

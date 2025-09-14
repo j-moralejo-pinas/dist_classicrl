@@ -347,7 +347,6 @@ def run_training(
             val_steps=None,
             val_episodes=10,
             curr_state_dict=curr_state,
-            # batch_size = 1,
         )  # type: ignore[]
 
         steps_completed += val_every_n_steps

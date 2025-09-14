@@ -1,6 +1,5 @@
 import timeit
 
-
 # Define the grid
 action_sizes = [2, 10, 100, 1000, 10000]
 num_agents_list = [1, 10, 100, 1000, 10000]
@@ -37,21 +36,20 @@ ql.q_table = np.array([random.random() for _ in range(state_size * action_size)]
 
 
 def get_code_from_file(file_path):
-    """Reads and extracts code from a file"""
-    with open(file_path, "r") as file:
+    """Reads and extracts code from a file."""
+    with open(file_path) as file:
         return file.read()
 
 
 def determine_iterations(action_size, num_agents):
-    """Adjusts iterations based on input size"""
+    """Adjusts iterations based on input size."""
     base_iterations = 10000000  # For smallest case (2 actions, 1 agent)
     scaling_factor = action_size * num_agents
     return max(base_iterations // scaling_factor, 10)  # Ensure a minimum of 10 iterations
 
 
-def benchmark_files(file_paths, output_file):
-    """Benchmarks multiple Python files and saves the best-performing file index per test case"""
-
+def benchmark_files(file_paths, output_file) -> None:
+    """Benchmarks multiple Python files and saves the best-performing file index per test case."""
     num_tests = len(file_paths)
     results = {
         test_idx: {
@@ -117,9 +115,8 @@ def benchmark_files(file_paths, output_file):
             f.write("\n")
 
 
-def benchmark_code_strings(code_strings, output_file):
-    """Benchmarks multiple Python strings and saves the best-performing file index per test case"""
-
+def benchmark_code_strings(code_strings, output_file) -> None:
+    """Benchmarks multiple Python strings and saves the best-performing file index per test case."""
     num_tests = len(code_strings)
     results = {
         test_idx: {
@@ -131,7 +128,6 @@ def benchmark_code_strings(code_strings, output_file):
     }
 
     for test_idx, code_string in enumerate(code_strings):
-
         for action_size in action_sizes:
             for num_agents in num_agents_list:
                 setup_code = setup_code_template.format(
@@ -185,7 +181,6 @@ def benchmark_code_strings(code_strings, output_file):
 
 
 if __name__ == "__main__":
-
     output_filename = "det_true_mask.txt"
 
     code = [
@@ -213,4 +208,3 @@ qn.learn(states_np, actions_np, rewards_np, next_states_np)
     ]
 
     benchmark_code_strings(code, output_filename)
-    print(f"Results saved to {output_filename}")

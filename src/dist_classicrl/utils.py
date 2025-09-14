@@ -1,7 +1,12 @@
 """Utilities for working with discrete action spaces."""
 
+from typing import Any
+
+import gymnasium as gym
 import numpy as np
 from numpy.typing import NDArray
+
+from dist_classicrl.wrappers.dummy_vec_wrapper import DummyVecWrapper
 
 
 def compute_radix(nvec: NDArray[np.int32]) -> NDArray[np.int32]:
@@ -108,3 +113,27 @@ def decode_to_multi_discretes(
         Array of decoded multi-discrete vectors.
     """
     return (indices // radixes) % nvecs
+
+
+def _make_dummy_vec_env(
+    n_envs: int, env_class: type[gym.Env], env_kwargs: dict[str, Any]
+) -> DummyVecWrapper:
+    """
+    Create a vectorized environment of identical rigged bandits.
+
+    Parameters
+    ----------
+    n_envs : int
+        Number of parallel environments.
+    env_class : type[gym.Env]
+        The environment class to instantiate.
+    env_kwargs : dict[str, Any]
+        Keyword arguments to pass to the environment constructor.
+
+    Returns
+    -------
+    DummyVecWrapper
+        Vectorized wrapper containing ``n_envs`` bandit environments.
+    """
+    envs: list[gym.Env] = [env_class(**env_kwargs) for _ in range(n_envs)]
+    return DummyVecWrapper(envs)

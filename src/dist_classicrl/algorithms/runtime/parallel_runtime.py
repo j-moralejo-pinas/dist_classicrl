@@ -105,9 +105,9 @@ class ParallelQLearning(BaseRuntime):
             The average training reward.
         list[float]
             The list of episode rewards.
-        DistClassicRLEnv | VectorEnv
+        list[DistClassicRLEnv | VectorEnv]
             The current environments.
-        dict[str, Any]
+        list[dict[str, Any]]
             The current state of the environments, including states, infos and episode rewards.
         """
         if curr_state_dict is None:

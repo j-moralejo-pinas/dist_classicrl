@@ -1,6 +1,4 @@
-"""
-Test Q-Learning algorithm
-"""
+"""Test Q-Learning algorithm."""
 
 from gymnasium import spaces
 from gymnasium.vector import SyncVectorEnv
@@ -15,8 +13,7 @@ from dist_classicrl.wrappers.flatten_multidiscrete_wrapper import (
 
 def make_env():
     env = TicTacToeEnv()
-    env = FlattenMultiDiscreteObservationsWrapper(env)
-    return env
+    return FlattenMultiDiscreteObservationsWrapper(env)
 
 
 if __name__ == "__main__":

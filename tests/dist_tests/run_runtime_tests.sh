@@ -53,4 +53,3 @@ if [[ $rc2 -ne 0 || $rc3 -ne 0 ]]; then
 fi
 
 echo "Distributed tests passed for 2 and 3 MPI ranks."
-

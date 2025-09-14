@@ -97,7 +97,6 @@ class OptimalQLearningBase:
         self._np_rng = np.random.default_rng(seed)
         self._rng = random.Random(seed)
 
-
     def get_q_value(self, state: int, action: int) -> float:
         """
         Get the Q-value for a given state-action pair.
@@ -923,8 +922,13 @@ class OptimalQLearningBase:
         """
         # This version can't handle multiple updates to the same (state, action) pair.
         #' if len(states) > NUM_STATES_LEARN_THRESHOLD:
-        #'     self.learn_vec(states, actions, rewards, next_states, terminated, lr, next_action_masks)
+        #'     self.learn_vec(states,
+        #           actions,
+        #           rewards,
+        #           next_states,
+        #           terminated,
+        #           lr,
+        #           next_action_masks,
+        #'     )
         #' else:
-        self.learn_iter(
-            states, actions, rewards, next_states, terminated, lr, next_action_masks
-        )
+        self.learn_iter(states, actions, rewards, next_states, terminated, lr, next_action_masks)

@@ -1,4 +1,4 @@
-"""Test suite for the TicTacToe environment implementation."""
+"""Unit tests for :class:`dist_classicrl.environments.tiktaktoe_mod.TicTacToeEnv`."""
 
 import random
 

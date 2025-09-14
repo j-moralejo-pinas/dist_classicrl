@@ -1,3 +1,4 @@
+#!/bin/bash
 export PYTHONPATH=$(pwd)/src:$PYTHONPATH
 
 num_workers=7

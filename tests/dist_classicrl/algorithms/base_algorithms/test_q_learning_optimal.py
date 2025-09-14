@@ -1,7 +1,14 @@
+"""
+Unit tests for
+:class:`dist_classicrl.algorithms.base_algorithms.q_learning_optimal.OptimalQLearningBase`.
+"""  # noqa: D205
+
+from pathlib import Path
+from unittest.mock import patch
+
 import numpy as np
 import numpy.typing as npt
 import pytest
-from unittest.mock import patch
 
 from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
     OptimalQLearningBase,
@@ -9,23 +16,27 @@ from dist_classicrl.algorithms.base_algorithms.q_learning_optimal import (
 
 
 def test_init_q_table_shape_and_zeros() -> None:
+    """Q-table is created with the expected shape and zeros."""
     ql = OptimalQLearningBase(state_size=3, action_size=4, discount_factor=0.9, seed=123)
     assert ql.q_table.shape == (3, 4)
     assert np.all(ql.q_table == 0)
 
 
 def test_accepts_numpy_integer_sizes() -> None:
+    """Constructor accepts NumPy integer types for sizes."""
     ql = OptimalQLearningBase(state_size=np.int32(2), action_size=np.int64(3))
     assert ql.q_table.shape == (2, 3)
 
 
 def test_set_and_get_q_value() -> None:
+    """Setting and getting a single Q-value works as expected."""
     ql = OptimalQLearningBase(3, 4)
     ql.set_q_value(1, 2, 0.5)
     assert ql.get_q_value(1, 2) == 0.5
 
 
 def test_add_q_value() -> None:
+    """Adding to a single Q-value accumulates correctly."""
     ql = OptimalQLearningBase(3, 4)
     ql.set_q_value(0, 0, 1.0)
     ql.add_q_value(0, 0, 0.25)
@@ -33,6 +44,7 @@ def test_add_q_value() -> None:
 
 
 def test_add_q_values_and_get_q_values() -> None:
+    """Vectorized add/get operations update and retrieve point-wise values."""
     ql = OptimalQLearningBase(4, 5)
     states: npt.NDArray[np.int32] = np.array([0, 1, 2, 3], dtype=np.int32)
     actions: npt.NDArray[np.int32] = np.array([1, 2, 3, 4], dtype=np.int32)
@@ -71,6 +83,7 @@ def test_add_q_values_accumulates_duplicates() -> None:
 
 
 def test_get_state_and_states_q_values() -> None:
+    """Row slicing helpers for single and multiple states return expected values."""
     ql = OptimalQLearningBase(3, 4)
     # Fill with deterministic values 0..11
     ql.q_table = np.arange(12, dtype=np.float64).reshape(3, 4)
@@ -86,6 +99,7 @@ def test_get_state_and_states_q_values() -> None:
 
 
 def test_get_action_and_actions_q_values() -> None:
+    """Column slicing helpers for single and multiple actions return expected values."""
     ql = OptimalQLearningBase(3, 4)
     ql.q_table = np.arange(12, dtype=np.float64).reshape(3, 4)
 
@@ -99,7 +113,8 @@ def test_get_action_and_actions_q_values() -> None:
     assert np.array_equal(cols, expected)
 
 
-def test_save_roundtrip(tmp_path) -> None:
+def test_save_roundtrip(tmp_path: Path) -> None:
+    """Saving and loading the Q-table via NumPy round-trips equivalently."""
     ql = OptimalQLearningBase(2, 3)
     ql.q_table = np.array([[1.0, 2.0, 3.0], [4.5, 5.5, 6.5]], dtype=np.float64)
 
@@ -108,6 +123,7 @@ def test_save_roundtrip(tmp_path) -> None:
 
     loaded = np.load(out)
     assert np.array_equal(loaded, ql.q_table)
+
 
 def _invoke_learn(
     ql: OptimalQLearningBase,
@@ -121,6 +137,7 @@ def _invoke_learn(
     lr: float = 1.0,
     next_action_masks: npt.NDArray[np.int32] | None = None,
 ) -> None:
+    """Invoke a learn method variant with optional masks."""
     method = getattr(ql, method_name)
     if next_action_masks is None:
         method(states, actions, rewards, next_states, terminated, lr)
@@ -130,6 +147,7 @@ def _invoke_learn(
 
 @pytest.mark.parametrize("method_name", ["learn", "learn_iter", "learn_vec"])
 def test_learn_single_without_mask(method_name: str) -> None:
+    """Single-sample learning without mask uses the true next-state max."""
     # Setup
     gamma = 0.5
     ql = OptimalQLearningBase(state_size=4, action_size=3, discount_factor=gamma)
@@ -151,6 +169,7 @@ def test_learn_single_without_mask(method_name: str) -> None:
 
 @pytest.mark.parametrize("method_name", ["learn", "learn_iter", "learn_vec"])
 def test_learn_single_with_mask_forces_suboptimal(method_name: str) -> None:
+    """Masking the optimal next action forces a suboptimal target to be used."""
     # Setup
     gamma = 0.5
     ql = OptimalQLearningBase(state_size=4, action_size=3, discount_factor=gamma)
@@ -184,6 +203,7 @@ def test_learn_single_with_mask_forces_suboptimal(method_name: str) -> None:
 
 @pytest.mark.parametrize("method_name", ["learn", "learn_iter", "learn_vec"])
 def test_learn_multiple_without_mask_with_duplicate_update(method_name: str) -> None:
+    """Vector vs iterative learning differ when (state, action) indices repeat."""
     gamma = 0.5
     ql = OptimalQLearningBase(state_size=5, action_size=3, discount_factor=gamma)
     # Define next-state q-values for states 2 and 3
@@ -214,6 +234,7 @@ def test_learn_multiple_without_mask_with_duplicate_update(method_name: str) -> 
 
 @pytest.mark.parametrize("method_name", ["learn", "learn_iter", "learn_vec"])
 def test_learn_multiple_with_mask_and_duplicate_update(method_name: str) -> None:
+    """Masked multi-sample learning with repeated indices behaves as specified."""
     gamma = 0.5
     ql = OptimalQLearningBase(state_size=5, action_size=3, discount_factor=gamma)
     # Next-state q-values where optimal is masked out
@@ -275,6 +296,7 @@ def _invoke_choose_single(
     deterministic: bool,
     action_mask: list[int] | None = None,
 ) -> int:
+    """Invoke a single-state action selection variant, optionally masked."""
     if method_name in ("choose_action", "choose_action_vec"):
         return getattr(ql, method_name)(state, exploration_rate, deterministic=deterministic)
     if method_name in ("choose_masked_action", "choose_masked_action_vec"):
@@ -282,7 +304,8 @@ def _invoke_choose_single(
         return getattr(ql, method_name)(
             state, action_mask, exploration_rate, deterministic=deterministic
         )
-    raise ValueError(f"Unsupported single-state method: {method_name}")
+    msg = f"Unsupported single-state method: {method_name}"
+    raise ValueError(msg)
 
 
 def _invoke_choose_multi(
@@ -294,6 +317,7 @@ def _invoke_choose_multi(
     deterministic: bool,
     action_masks: npt.NDArray[np.int32] | None = None,
 ) -> npt.NDArray[np.int32]:
+    """Invoke a batched action selection variant, optionally with masks."""
     if method_name in ("choose_actions", "choose_actions_iter", "choose_actions_vec_iter"):
         return getattr(ql, method_name)(
             states, exploration_rate, deterministic=deterministic, action_masks=action_masks
@@ -306,23 +330,24 @@ def _invoke_choose_multi(
         return ql.choose_masked_actions_vec(
             states, action_masks, exploration_rate, deterministic=deterministic
         )
-    raise ValueError(f"Unsupported multi-state method: {method_name}")
+    msg = f"Unsupported multi-state method: {method_name}"
+    raise ValueError(msg)
 
 
 @pytest.mark.parametrize("method_name", ["choose_action", "choose_action_vec"])
 def test_choose_action_single_deterministic_unmasked_unique_max(method_name: str) -> None:
+    """Deterministic selection picks the unique unmasked maximum."""
     ql = OptimalQLearningBase(state_size=2, action_size=3, discount_factor=0.9, seed=123)
     # Unique max at index 1
     ql.q_table[0] = np.array([0.1, 0.8, 0.2], dtype=np.float64)
 
-    action = _invoke_choose_single(
-        ql, method_name, 0, exploration_rate=0.0, deterministic=True
-    )
+    action = _invoke_choose_single(ql, method_name, 0, exploration_rate=0.0, deterministic=True)
     assert action == 1
 
 
 @pytest.mark.parametrize("method_name", ["choose_masked_action", "choose_masked_action_vec"])
 def test_choose_action_single_deterministic_masked_unique_max(method_name: str) -> None:
+    """Deterministic selection respects masks and picks the masked maximum."""
     ql = OptimalQLearningBase(state_size=2, action_size=3, discount_factor=0.9, seed=123)
     # Global max at index 1 but mask hides it; among masked {0,2}, index 2 is max
     ql.q_table[0] = np.array([0.3, 1.0, 0.7], dtype=np.float64)
@@ -336,20 +361,23 @@ def test_choose_action_single_deterministic_masked_unique_max(method_name: str) 
 
 @pytest.mark.parametrize("method_name", ["choose_action", "choose_action_vec"])
 def test_choose_action_single_nondeterministic_unmasked_explore(method_name: str) -> None:
+    """Exploration path returns a random action when epsilon triggers."""
     ql = OptimalQLearningBase(state_size=2, action_size=3, discount_factor=0.9, seed=123)
     # Q-values irrelevant when exploring
     ql.q_table[0] = np.array([0.1, 0.8, 0.2], dtype=np.float64)
 
     if method_name == "choose_action":
-        with patch.object(ql._rng, "uniform", return_value=0.0), patch.object(
-            ql._rng, "randint", return_value=2
+        with (
+            patch.object(ql._rng, "uniform", return_value=0.0),
+            patch.object(ql._rng, "randint", return_value=2),
         ):
             action = _invoke_choose_single(
                 ql, method_name, 0, exploration_rate=1.0, deterministic=False
             )
     else:  # choose_action_vec
-        with patch.object(ql._rng, "random", return_value=0.0), patch.object(
-            ql._rng, "randint", return_value=2
+        with (
+            patch.object(ql._rng, "random", return_value=0.0),
+            patch.object(ql._rng, "randint", return_value=2),
         ):
             action = _invoke_choose_single(
                 ql, method_name, 0, exploration_rate=1.0, deterministic=False
@@ -359,20 +387,23 @@ def test_choose_action_single_nondeterministic_unmasked_explore(method_name: str
 
 @pytest.mark.parametrize("method_name", ["choose_masked_action", "choose_masked_action_vec"])
 def test_choose_action_single_nondeterministic_masked_single_option(method_name: str) -> None:
+    """With a single allowed action, exploration still returns that action."""
     ql = OptimalQLearningBase(state_size=2, action_size=3, discount_factor=0.9, seed=123)
     ql.q_table[0] = np.array([0.3, 1.0, 0.7], dtype=np.float64)
     # Only a single allowed action -> deterministic outcome despite exploration
     mask = [0, 1, 0]
     if method_name == "choose_masked_action":
-        with patch.object(ql._rng, "uniform", return_value=0.0), patch.object(
-            ql._rng, "choice", return_value=1
+        with (
+            patch.object(ql._rng, "uniform", return_value=0.0),
+            patch.object(ql._rng, "choice", return_value=1),
         ):
             action = _invoke_choose_single(
                 ql, method_name, 0, exploration_rate=1.0, deterministic=False, action_mask=mask
             )
     else:  # choose_masked_action_vec
-        with patch.object(ql._rng, "random", return_value=0.0), patch.object(
-            ql._rng, "choice", return_value=1
+        with (
+            patch.object(ql._rng, "random", return_value=0.0),
+            patch.object(ql._rng, "choice", return_value=1),
         ):
             action = _invoke_choose_single(
                 ql, method_name, 0, exploration_rate=1.0, deterministic=False, action_mask=mask
@@ -385,6 +416,7 @@ def test_choose_action_single_nondeterministic_masked_single_option(method_name:
     ["choose_actions", "choose_actions_iter", "choose_actions_vec_iter", "choose_actions_vec"],
 )
 def test_choose_actions_multiple_deterministic_unmasked_unique_max(method_name: str) -> None:
+    """Deterministic batched selection picks unique maxima per state."""
     ql = OptimalQLearningBase(state_size=4, action_size=3, discount_factor=0.9, seed=123)
     # Build unique maxima for states 0,2
     ql.q_table[0] = np.array([0.2, 0.9, 0.1], dtype=np.float64)  # -> 1
@@ -399,9 +431,15 @@ def test_choose_actions_multiple_deterministic_unmasked_unique_max(method_name: 
 
 @pytest.mark.parametrize(
     "method_name",
-    ["choose_actions", "choose_actions_iter", "choose_actions_vec_iter", "choose_masked_actions_vec"],
+    [
+        "choose_actions",
+        "choose_actions_iter",
+        "choose_actions_vec_iter",
+        "choose_masked_actions_vec",
+    ],
 )
 def test_choose_actions_multiple_deterministic_masked_unique_max(method_name: str) -> None:
+    """Deterministic batched selection respects masks for maxima per state."""
     ql = OptimalQLearningBase(state_size=4, action_size=3, discount_factor=0.9, seed=123)
     # Global maxima masked out
     ql.q_table[0] = np.array([0.2, 0.9, 0.1], dtype=np.float64)  # mask out 1 -> pick 0
@@ -425,6 +463,7 @@ def test_choose_actions_multiple_deterministic_masked_unique_max(method_name: st
     ["choose_actions", "choose_actions_iter", "choose_actions_vec_iter", "choose_actions_vec"],
 )
 def test_choose_actions_multiple_nondeterministic_unmasked_explore(method_name: str) -> None:
+    """Exploration in batched unmasked mode yields per-sample random actions."""
     # Force exploration for all via mocking
     ql = OptimalQLearningBase(state_size=4, action_size=3, discount_factor=0.9, seed=123)
     ql.q_table[:] = 0.0
@@ -438,21 +477,22 @@ def test_choose_actions_multiple_nondeterministic_unmasked_explore(method_name: 
             actions = _invoke_choose_multi(
                 ql, method_name, states, exploration_rate=1.0, deterministic=False
             )
-    else:
-        if method_name in ("choose_actions", "choose_actions_iter"):
-            with patch.object(ql._rng, "uniform", return_value=0.0), patch.object(
-                ql._rng, "randint", side_effect=[0, 1, 2]
-            ):
-                actions = _invoke_choose_multi(
-                    ql, method_name, states, exploration_rate=1.0, deterministic=False
-                )
-        else:  # choose_actions_vec_iter uses choose_action_vec
-            with patch.object(ql._rng, "random", return_value=0.0), patch.object(
-                ql._rng, "randint", side_effect=[0, 1, 2]
-            ):
-                actions = _invoke_choose_multi(
-                    ql, method_name, states, exploration_rate=1.0, deterministic=False
-                )
+    elif method_name in ("choose_actions", "choose_actions_iter"):
+        with (
+            patch.object(ql._rng, "uniform", return_value=0.0),
+            patch.object(ql._rng, "randint", side_effect=[0, 1, 2]),
+        ):
+            actions = _invoke_choose_multi(
+                ql, method_name, states, exploration_rate=1.0, deterministic=False
+            )
+    else:  # choose_actions_vec_iter uses choose_action_vec
+        with (
+            patch.object(ql._rng, "random", return_value=0.0),
+            patch.object(ql._rng, "randint", side_effect=[0, 1, 2]),
+        ):
+            actions = _invoke_choose_multi(
+                ql, method_name, states, exploration_rate=1.0, deterministic=False
+            )
     assert actions.shape == (3,)
     assert np.array_equal(actions, np.array([0, 1, 2], dtype=np.int32))
 
@@ -467,6 +507,7 @@ def test_choose_actions_multiple_nondeterministic_unmasked_explore(method_name: 
     ],
 )
 def test_choose_actions_multiple_nondeterministic_masked_explore(method_name: str) -> None:
+    """Exploration in batched masked mode samples only from allowed actions."""
     # Force exploration; selections must be within mask allowed indices
     ql = OptimalQLearningBase(state_size=4, action_size=4, discount_factor=0.9, seed=123)
     ql.q_table[:] = 0.0
@@ -481,8 +522,9 @@ def test_choose_actions_multiple_nondeterministic_masked_explore(method_name: st
     )
 
     if method_name == "choose_masked_actions_vec":
-        with patch.object(ql, "_np_rng") as np_rng_mock, patch.object(
-            ql._rng, "choice", side_effect=[0, 2, 3]
+        with (
+            patch.object(ql, "_np_rng") as np_rng_mock,
+            patch.object(ql._rng, "choice", side_effect=[0, 2, 3]),
         ):
             # Return floats < exploration_rate to force exploration for all
             np_rng_mock.random.return_value = np.array([0.0, 0.0, 0.0], dtype=np.float64)
@@ -494,48 +536,46 @@ def test_choose_actions_multiple_nondeterministic_masked_explore(method_name: st
                 deterministic=False,
                 action_masks=masks,
             )
-    else:
-        if method_name in ("choose_actions", "choose_actions_iter"):
-            with patch.object(ql._rng, "uniform", return_value=0.0), patch.object(
-                ql._rng, "choice", side_effect=[0, 2, 3]
-            ):
-                actions = _invoke_choose_multi(
-                    ql,
-                    method_name,
-                    states,
-                    exploration_rate=1.0,
-                    deterministic=False,
-                    action_masks=masks,
-                )
-        else:  # choose_actions_vec_iter uses choose_masked_action_vec -> _rng.random and _rng.choice
-            with patch.object(ql._rng, "random", return_value=0.0), patch.object(
-                ql._rng, "choice", side_effect=[0, 2, 3]
-            ):
-                actions = _invoke_choose_multi(
-                    ql,
-                    method_name,
-                    states,
-                    exploration_rate=1.0,
-                    deterministic=False,
-                    action_masks=masks,
-                )
+    elif method_name in ("choose_actions", "choose_actions_iter"):
+        with (
+            patch.object(ql._rng, "uniform", return_value=0.0),
+            patch.object(ql._rng, "choice", side_effect=[0, 2, 3]),
+        ):
+            actions = _invoke_choose_multi(
+                ql,
+                method_name,
+                states,
+                exploration_rate=1.0,
+                deterministic=False,
+                action_masks=masks,
+            )
+    else:  # choose_actions_vec_iter uses choose_masked_action_vec -> _rng.random and _rng.choice
+        with (
+            patch.object(ql._rng, "random", return_value=0.0),
+            patch.object(ql._rng, "choice", side_effect=[0, 2, 3]),
+        ):
+            actions = _invoke_choose_multi(
+                ql,
+                method_name,
+                states,
+                exploration_rate=1.0,
+                deterministic=False,
+                action_masks=masks,
+            )
     assert actions.shape == (3,)
     assert np.array_equal(actions, np.array([0, 2, 3], dtype=np.int32))
 
 
 @pytest.mark.parametrize("method_name", ["choose_action", "choose_action_vec"])
 def test_choose_action_tie_breaking_mocked_two_choices(method_name: str) -> None:
+    """When a tie occurs, RNG-based tie-breaking is used (mocked here)."""
     ql = OptimalQLearningBase(state_size=1, action_size=3, discount_factor=0.9, seed=123)
     # Tie between actions 0 and 1
     ql.q_table[0] = np.array([0.9, 0.9, 0.1], dtype=np.float64)
 
     with patch.object(ql._rng, "choice", side_effect=[0, 1]):
-        a1 = _invoke_choose_single(
-            ql, method_name, 0, exploration_rate=0.0, deterministic=True
-        )
-        a2 = _invoke_choose_single(
-            ql, method_name, 0, exploration_rate=0.0, deterministic=True
-        )
+        a1 = _invoke_choose_single(ql, method_name, 0, exploration_rate=0.0, deterministic=True)
+        a2 = _invoke_choose_single(ql, method_name, 0, exploration_rate=0.0, deterministic=True)
 
     assert a1 == 0
     assert a2 == 1
@@ -546,6 +586,7 @@ def test_choose_action_tie_breaking_mocked_two_choices(method_name: str) -> None
     ["choose_actions", "choose_actions_iter", "choose_actions_vec_iter", "choose_actions_vec"],
 )
 def test_choose_actions_tie_breaking_mocked_array_unmasked(method_name: str) -> None:
+    """Batched unmasked tie-breaking follows RNG (mock-controlled)."""
     ql = OptimalQLearningBase(state_size=3, action_size=3, discount_factor=0.9, seed=123)
     # Two states with ties among actions 0 and 1
     ql.q_table[0] = np.array([0.5, 0.5, 0.1], dtype=np.float64)
@@ -562,9 +603,15 @@ def test_choose_actions_tie_breaking_mocked_array_unmasked(method_name: str) -> 
 
 @pytest.mark.parametrize(
     "method_name",
-    ["choose_actions", "choose_actions_iter", "choose_actions_vec_iter", "choose_masked_actions_vec"],
+    [
+        "choose_actions",
+        "choose_actions_iter",
+        "choose_actions_vec_iter",
+        "choose_masked_actions_vec",
+    ],
 )
 def test_choose_actions_tie_breaking_mocked_array_masked(method_name: str) -> None:
+    """Batched masked tie-breaking follows RNG among allowed actions."""
     ql = OptimalQLearningBase(state_size=3, action_size=3, discount_factor=0.9, seed=123)
     # State 0: tie between 0 and 2 (mask hides 1)
     ql.q_table[0] = np.array([0.7, 0.7, 0.7], dtype=np.float64)
