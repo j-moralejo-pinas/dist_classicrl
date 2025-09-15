@@ -62,7 +62,7 @@ try:
 except Exception:
     # 2) Fallback to installed package metadata
     try:
-        from importlib.metadata import version, PackageNotFoundError  # Python 3.8+
+        from importlib.metadata import PackageNotFoundError, version  # Python 3.8+
     except Exception:  # pragma: no cover
         # Very old Python or exotic environment
         __version__ = "0.0.0"  # pragma: no cover
