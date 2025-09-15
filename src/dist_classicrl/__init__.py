@@ -75,4 +75,3 @@ except ImportError:
             # Avoid leaking names into the package namespace
             del version
             del PackageNotFoundError
-
