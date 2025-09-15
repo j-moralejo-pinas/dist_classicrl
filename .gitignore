@@ -60,4 +60,4 @@ MANIFEST
 pyrightconfig.local.json
 
 # Version file
-*_version.py
+#*_version.py
