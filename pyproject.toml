@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dist_classicrl"
 description = "A high-performance Python package for distributed classical reinforcement learning algorithms with support for single-threaded, parallel, and MPI-distributed Q-Learning training."
-version = "0.0.0"
+dynamic = ["version"]
 authors = [
     { name = "Javier Moralejo Piñas", email = "j.moralejo.pinas@gmail.com" },
 ]
@@ -27,6 +27,7 @@ Tracker = "https://github.com/j-moralejo-pinas/dist_classicrl/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -37,6 +38,7 @@ exclude = ["tests"]
 # check out https://github.com/pypa/setuptools_scm
 version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
+write_to = "src/dist_classicrl/_version.py"
 
 [project.optional-dependencies]
 dev = [
