@@ -58,3 +58,6 @@ MANIFEST
 
 # PyRight Local Config
 pyrightconfig.local.json
+
+# Version file
+*_version.py
