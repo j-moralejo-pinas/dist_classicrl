@@ -62,7 +62,7 @@ jobs:
       - name: Install dependencies
         if: steps.skip_autofix.outputs.skip == 'no'
         run: |
-          pdm install -G format
+          pdm install --no-self -G format
 
       - name: Pyupgrade
         if: steps.skip_autofix.outputs.skip == 'no'
@@ -136,7 +136,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pdm install -G code-quality
+          pdm install --no-self -G code-quality
 
       - name: Run pydoclint
         run: |
@@ -175,7 +175,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pdm install -G test
+          pdm install --no-self -G test
 
       - name: Run tests
         run: |
