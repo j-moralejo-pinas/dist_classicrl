@@ -67,6 +67,12 @@ jobs:
           echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON"
 
+      - name: Configure git user for tagging
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Tag merge commit
         shell: bash
         run: |
@@ -100,7 +106,7 @@ jobs:
     needs: semver-tag
     runs-on: ubuntu-latest
     env:
-      PACKAGE_NAME: your-package-name   # set this to your distribution name on PyPI
+      PACKAGE_NAME: dist_classicrl   # distribution name on PyPI
       TAG: ${{ needs.semver-tag.outputs.new_tag }}   # vX.Y.Z
       VERSION: ${{ needs.semver-tag.outputs.version }}  # X.Y.Z
     steps:
@@ -116,7 +122,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.13'
 
       - name: Install build and twine
         run: |
