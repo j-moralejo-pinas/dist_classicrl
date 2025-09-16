@@ -106,9 +106,8 @@ Algorithm Implementations
 
 **Q-Learning Variants:**
 
-- **Optimal Q-Learning**: Base implementation with multiple optimization strategies
-- **List-based Q-Learning**: List based Q-table for small state spaces
-- **NumPy Q-Learning**: Vectorized Q-table using NumPy for large state spaces
+- **Optimal Q-Learning**: Base implementation that automatically vectorizes operations for efficiency,
+    when the number of observations processed reaches a certain threshold.
 
 **Execution Modes:**
 
@@ -119,8 +118,8 @@ Algorithm Implementations
 **Future Algorithms:**
 
 - SARSA and Expected SARSA
-- Deep Q-Learning integration
-- Multi-agent coordination algorithms
+- Experience Replay
+- Multi-agent with PettingZoo environments
 
 Support and Community
 =====================

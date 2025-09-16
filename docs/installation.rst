@@ -16,8 +16,6 @@ Before installing the project, ensure you have the following requirements:
 * **Git** for cloning the repository
 * **Internet connection** for downloading dependencies
 
-The project has been tested on Linux, macOS, and Windows systems.
-
 User Installation
 =================
 
@@ -26,14 +24,7 @@ This section is for users who want to use the project template without modifying
 Quick Start
 -----------
 
-1. **Clone the Repository**
-
-    Clone the project repository from GitHub::
-
-        git clone https://github.com/j-moralejo-pinas/dist_classicrl.git
-        cd dist_classicrl
-
-2. **Set Up Virtual Environment (Recommended)**
+1. **Set Up Virtual Environment (Recommended)**
 
     While not mandatory, using a virtual environment is highly recommended to avoid dependency conflicts::
 
@@ -48,19 +39,19 @@ Quick Start
         # On Windows:
         venv\Scripts\activate
 
-3. **Install the Package**
+2. **Install the Package**
 
     Install the project and its dependencies::
 
-        pip install -e .
+        pip install dist_classicrl
 
-4. **Verify Installation**
+3. **Verify Installation**
 
     Test that the installation was successful::
 
         python -c "import dist_classicrl; print('Installation successful!')"
 
-5. **Install MPI (Optional)**
+4. **Install MPI (Optional)**
 
     If you plan to use distributed training, install MPI::
 
