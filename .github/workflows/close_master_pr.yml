@@ -148,7 +148,10 @@ jobs:
             "${PACKAGE_NAME}==${VERSION}"
 
       - name: Verify installed version
-        run: ./.venv_test/bin/python .github/scripts/verify_version.py "${{ env.PACKAGE_NAME }}" "${{ env.VERSION }}"
+        uses: ./.github/actions/verify-version
+        with:
+          package: ${{ env.PACKAGE_NAME }}
+          expected: ${{ env.VERSION }}
 
       - name: Upload to PyPI
         if: success()
