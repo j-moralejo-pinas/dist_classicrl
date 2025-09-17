@@ -150,6 +150,7 @@ You may need to adjust the number of agents, processes, and MPI ranks based on y
 See Also
 ========
 
-- :doc:`installation` - Installation instructions including MPI setup
-- :doc:`tutorials` - Getting started with different runtime configurations
-- :doc:`contributing` - Guidelines for contributing performance improvements
+- `Installation <docs/installation.rst>`_ - Installation instructions including MPI setup
+- `Contributing <CONTRIBUTING.rst>`_ - Guidelines for contributing performance improvements
+- `Tutorials <docs/tutorials.rst>`_ - Getting started with different runtime configurations
+

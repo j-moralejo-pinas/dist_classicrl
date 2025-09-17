@@ -185,13 +185,8 @@ If you have issues with virtual environments, try::
 * Review the documentation for detailed usage examples
 * Ensure all dependencies are correctly installed
 
-Next Steps
-==========
+See Also
+========
 
-After successful installation, you can:
-
-1. **Read the Documentation**: Navigate through the user guides for detailed usage instructions
-
-For detailed usage instructions and examples, refer to the documentation:
-* :doc:`index` - Project overview and documentation
-* :doc:`contributing` - How to contribute to the project
+- `Tutorials <docs/tutorials.rst>`_ - Getting started with different runtime configurations
+- `Contributing <CONTRIBUTING.rst>`_ - How to contribute to the project

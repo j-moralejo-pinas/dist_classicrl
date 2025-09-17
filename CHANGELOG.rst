@@ -26,7 +26,7 @@ Version 0.0.0
     - More cores/vectorized envs makes the training unstable.
 
 Version 0.1.0
-===========
+=============
 
 - ``Added``: Basic Q-learning algorithm that chooses iterative/vectorized operations optimally.
 - ``Added``: 3 runtime modes: single-process, multi-process and distributed (mpi)
