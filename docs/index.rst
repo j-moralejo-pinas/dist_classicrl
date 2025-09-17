@@ -58,7 +58,7 @@ Documentation Sections
     :maxdepth: 2
     :caption: Getting Started
 
-    Overview <readme>
+    Overview <README>
     Installation & Quick Start <installation>
     Tutorials <tutorials>
     Performance Benchmarks <benchmarks>
@@ -73,15 +73,16 @@ Documentation Sections
     :maxdepth: 2
     :caption: Development
 
-    Contributing <contributing>
+    Contributing <CONTRIBUTING>
 
 .. toctree::
     :maxdepth: 1
     :caption: Project Info
 
-    License <license>
-    Authors <authors>
-    Changelog <changelog>
+    License <LICENSE>
+    Authors <AUTHORS>
+    Changelog <CHANGELOG>
+    Code of Conduct <CODE_OF_CONDUCT>
 
 
 Examples
@@ -126,7 +127,7 @@ Support and Community
 
 - **GitHub Issues**: `Report bugs and request features <https://github.com/j-moralejo-pinas/dist_classicrl/issues>`_
 - **Documentation**: You're reading it! 📖
-- **Contributing**: See :doc:`contributing` for how to get involved
+- **Contributing**: See :doc:`CONTRIBUTING` for how to get involved
 
 The dist_classicrl project welcomes contributions from the community. Whether you're fixing bugs,
 adding features, improving documentation, or sharing your use cases, we'd love to hear from you!
@@ -135,9 +136,7 @@ adding features, improving documentation, or sharing your use cases, we'd love t
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+- :ref:`modindex`
 
 .. _toctree: https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html
 .. _reStructuredText: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html

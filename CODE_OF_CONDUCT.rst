@@ -1,8 +1,6 @@
-====================
-Code of Conduct (Placeholder)
-====================
-
-This is a placeholder for the ci-cd-python project Code of Conduct.
+===============
+Code of Conduct
+===============
 
 All contributors, maintainers, and users are expected to uphold standards of respectful and inclusive behavior in all project spaces.
 
