@@ -138,6 +138,9 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
+      - name: Wait a bit for TestPyPI to index the package
+        run: sleep 30
+
       - name: Create clean venv and install from TestPyPI
         shell: bash
         run: |
