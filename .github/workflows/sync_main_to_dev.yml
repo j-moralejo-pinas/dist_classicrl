@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BASE: main
-      TARGET: develop
+      TARGET: dev
     steps:
       - name: Checkout
         uses: actions/checkout@v4
