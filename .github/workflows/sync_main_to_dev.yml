@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 concurrency:
@@ -39,10 +39,6 @@ jobs:
       - name: Stop if no changes to sync
         if: steps.ahead.outputs.ahead == '0'
         run: echo "No new commits on ${BASE} to PR into ${TARGET}. Skipping."
-
-      - name: Set up GitHub CLI
-        if: steps.ahead.outputs.ahead != '0'
-        uses: cli/gh-actions@v2
 
       - name: Check for an existing open PR BASE -> TARGET
         if: steps.ahead.outputs.ahead != '0'
