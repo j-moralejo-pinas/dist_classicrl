@@ -1,0 +1,74 @@
+# .github/workflows/open-sync-pr.yml
+name: Open PR main -> develop on release merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  open-sync-pr:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      BASE: main
+      TARGET: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branches
+        run: git fetch origin +refs/heads/*:refs/remotes/origin/* --prune
+
+      - name: Check if BASE is ahead of TARGET
+        id: ahead
+        run: |
+          AHEAD=$(git rev-list --left-right --count origin/${TARGET}...origin/${BASE} | awk '{print $2}')
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+
+      - name: Stop if no changes to sync
+        if: steps.ahead.outputs.ahead == '0'
+        run: echo "No new commits on ${BASE} to PR into ${TARGET}. Skipping."
+
+      - name: Check for an existing open PR BASE -> TARGET
+        if: steps.ahead.outputs.ahead != '0'
+        id: findpr
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PR_COUNT=$(gh pr list --state open --base "${TARGET}" --head "${BASE}" --json number --jq 'length')
+          if [ "${PR_COUNT}" -gt 0 ]; then
+            echo "exists=yes" >> "$GITHUB_OUTPUT"
+            echo "An open PR from ${BASE} to ${TARGET} already exists. Skipping."
+          else
+            echo "exists=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR main -> develop
+        if: steps.ahead.outputs.ahead != '0' && steps.findpr.outputs.exists == 'no'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          TITLE="Sync ${BASE} into ${TARGET}"
+          BODY="Automated PR after merging #${{ github.event.pull_request.number }} into ${BASE}."
+          gh pr create --base "${TARGET}" --head "${BASE}" --title "$TITLE" --body "$BODY"
+
+      - name: Enable automerge
+        if: steps.ahead.outputs.ahead != '0' && steps.findpr.outputs.exists == 'no'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Grab the PR number just created
+          PR_NUMBER=$(gh pr list --state open --base "${TARGET}" --head "${BASE}" --json number -q '.[0].number')
+          # Enable auto-merge with squash (change to --merge or --rebase if desired)
+          gh pr merge $PR_NUMBER --auto --merge

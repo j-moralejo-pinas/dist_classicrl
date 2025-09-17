@@ -1,0 +1,164 @@
+name: release_on_merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  semver-tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      HAS_MAJOR_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'semver:major') }}
+    outputs:
+      new_tag: ${{ steps.bump.outputs.new_tag }}
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force --prune
+
+      - name: Determine latest tag vX.Y.Z
+        id: latest
+        shell: bash
+        run: |
+          LATEST="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -n1)"
+          if [ -z "$LATEST" ]; then LATEST="v0.0.0"; fi
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Compute next version
+        id: bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          LATEST="${{ steps.latest.outputs.latest }}"
+          [[ "$LATEST" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "Malformed latest tag"; exit 1; }
+          X="${BASH_REMATCH[1]}"; Y="${BASH_REMATCH[2]}"; Z="${BASH_REMATCH[3]}"
+
+          HEAD_BRANCH="${{ env.HEAD_BRANCH }}"
+          PR_TITLE="${{ env.PR_TITLE }}"
+          HAS_MAJOR_LABEL="${{ env.HAS_MAJOR_LABEL }}"
+
+          if [ "$HAS_MAJOR_LABEL" = "true" ] || [[ "$PR_TITLE" =~ (\[major\]|#major) ]]; then
+            X=$((X+1)); Y=0; Z=0; REASON="major signal"
+          elif [[ "$HEAD_BRANCH" =~ ^hotfix/ ]]; then
+            Z=$((Z+1)); REASON="hotfix patch bump"
+          else
+            Y=$((Y+1)); Z=0; REASON="regular release minor bump"
+          fi
+
+          NEW_TAG="v${X}.${Y}.${Z}"
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON"
+
+      - name: Configure git user for tagging
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Tag merge commit
+        shell: bash
+        run: |
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
+          MERGE_SHA="${{ env.MERGE_SHA }}"
+
+          if git rev-parse -q --verify "refs/tags/$NEW_TAG" >/dev/null; then
+            echo "Tag $NEW_TAG already exists"
+            exit 1
+          fi
+
+          if [ -z "$MERGE_SHA" ] || ! git cat-file -e "$MERGE_SHA^{commit}" 2>/dev/null; then
+            echo "merge_commit_sha not available, fallback to latest on base branch"
+            git fetch origin "${{ env.BASE_BRANCH }}":"refs/remotes/origin/${{ env.BASE_BRANCH }}"
+            MERGE_SHA="$(git rev-parse "origin/${{ env.BASE_BRANCH }}")"
+          fi
+
+          echo "Tagging $MERGE_SHA with $NEW_TAG"
+          git tag -a "$NEW_TAG" "$MERGE_SHA" -m "chore(release): $NEW_TAG"
+          git push origin "$NEW_TAG"
+
+      - name: Derive version without v
+        id: ver
+        shell: bash
+        run: |
+          TAG="${{ steps.bump.outputs.new_tag }}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: build → testpypi → verify → pypi
+    needs: semver-tag
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: dist_classicrl   # distribution name on PyPI
+      TAG: ${{ needs.semver-tag.outputs.new_tag }}   # vX.Y.Z
+      VERSION: ${{ needs.semver-tag.outputs.version }}  # X.Y.Z
+    steps:
+      - name: Checkout at tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          git fetch --tags --force --prune
+          git checkout "refs/tags/${TAG}"
+          echo "Building from ${TAG}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install build and twine
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Upload to TestPyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        run: twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+      - name: Wait a bit for TestPyPI to index the package
+        run: sleep 30
+
+      - name: Create clean venv and install from TestPyPI
+        shell: bash
+        run: |
+          python -m venv .venv_test
+          . .venv_test/bin/activate
+          python -m pip install --upgrade pip
+          pip install --index-url https://test.pypi.org/simple --extra-index-url https://pypi.org/simple \
+            "${PACKAGE_NAME}==${VERSION}"
+
+      - name: Verify installed version
+        uses: ./.github/actions/verify-version
+        with:
+          package: ${{ env.PACKAGE_NAME }}
+          expected: ${{ env.VERSION }}
+
+      - name: Upload to PyPI
+        if: success()
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
