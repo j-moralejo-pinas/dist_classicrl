@@ -62,3 +62,13 @@ jobs:
           TITLE="Sync ${BASE} into ${TARGET}"
           BODY="Automated PR after merging #${{ github.event.pull_request.number }} into ${BASE}."
           gh pr create --base "${TARGET}" --head "${BASE}" --title "$TITLE" --body "$BODY"
+
+      - name: Enable automerge
+        if: steps.ahead.outputs.ahead != '0' && steps.findpr.outputs.exists == 'no'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Grab the PR number just created
+          PR_NUMBER=$(gh pr list --state open --base "${TARGET}" --head "${BASE}" --json number -q '.[0].number')
+          # Enable auto-merge with squash (change to --merge or --rebase if desired)
+          gh pr merge $PR_NUMBER --auto --merge
