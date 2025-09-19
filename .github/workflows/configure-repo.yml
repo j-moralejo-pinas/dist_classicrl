@@ -7,8 +7,7 @@ permissions:
 
 jobs:
   apply:
-    # Optional but safer: gate with an environment named "prod"
-    # Configure required reviewers and branch restrictions in Settings → Environments.
+    # Optional safety gate. Keep if you stored ADMIN_TOKEN in env "prod".
     environment: main
     runs-on: ubuntu-latest
 
@@ -22,7 +21,9 @@ jobs:
             sudo apt-get install -y jq
           fi
 
+      # 1) Core settings (only non-defaults)
       - name: Core repo settings
+        id: core
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           REPO_NEW_NAME: dist_classicrl
@@ -45,36 +46,52 @@ jobs:
           fi
 
           gh api --method PATCH -H "Accept: application/vnd.github+json" \
-            "/repos/$GITHUB_REPOSITORY" --input <(printf '%s' "$BODY")
+            "/repos/$GITHUB_REPOSITORY" \
+            --input <(printf '%s' "$BODY")
 
+          # Get fresh slug after possible rename. Write to outputs and env.
           REPO_SLUG=$(gh api "/repos/$GITHUB_REPOSITORY" -H "Accept: application/vnd.github+json" -q .full_name)
+          echo "slug=$REPO_SLUG" >> "$GITHUB_OUTPUT"
           echo "REPO_SLUG=$REPO_SLUG" >> "$GITHUB_ENV"
 
+      # 2) Topics
       - name: Topics
-        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          REPO_TOPICS_JSON: '[]'  # set like '["python","rl","mpi"]' or '[]' to clear
         run: |
-          gh api --method PUT -H "Accept: application/vnd.github+json" \
+          set -euo pipefail
+          # Fallback if env not set for any reason
+          REPO_SLUG="${REPO_SLUG:-$GITHUB_REPOSITORY}"
+
+          # Set your topics here. Use [] to clear.
+          REPO_TOPICS_JSON='[]'
+
+          gh api --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/$REPO_SLUG/topics" \
             --input <(jq -n --argjson names "$REPO_TOPICS_JSON" '{names:$names}')
 
+      # 3) Workflow token permissions
       - name: Workflow permissions
-        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
+          set -euo pipefail
+          REPO_SLUG="${REPO_SLUG:-$GITHUB_REPOSITORY}"
+
           gh api -X PUT "/repos/$REPO_SLUG/actions/permissions/workflow" \
             -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             --input <(jq -n '{default_workflow_permissions:"write"}')
 
+      # 4) Rulesets (correct schema). Never call /repos//rulesets again.
       - name: Create or update rulesets
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          REPO_SLUG: ${{ steps.core.outputs.slug }}
         run: |
           set -euo pipefail
+          REPO_SLUG="${REPO_SLUG:-$GITHUB_REPOSITORY}"
           API=(-H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
 
           find_ruleset_id_by_name() {
