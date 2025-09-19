@@ -109,10 +109,10 @@ jobs:
           replace_ruleset() {
             local NAME="$1" BRANCH="$2" ALLOWED_MERGES_JSON="$3"; shift 3
             local CHECKS_LIST=("$@")
-      
+          
             local CHECKS_JSON
             CHECKS_JSON=$(printf '%s\n' "${CHECKS_LIST[@]}" | mk_checks_json)
-      
+          
             local BODY
             BODY=$(jq -n \
               --arg name "$NAME" \
@@ -126,15 +126,19 @@ jobs:
                 conditions: { ref_name: { include: [$branch], exclude: [] } },
                 rules: [
                   { "type": "deletion" },
-                  { "type": "pull_request",
+                  {
+                    "type": "pull_request",
                     "parameters": {
                       "dismiss_stale_reviews_on_push": true,
                       "require_code_owner_review": true,
                       "required_approving_review_count": 1,
+                      "required_review_thread_resolution": true,
+                      "require_last_push_approval": false,
                       "allowed_merge_methods": $allowed
                     }
                   },
-                  { "type": "required_status_checks",
+                  {
+                    "type": "required_status_checks",
                     "parameters": {
                       "do_not_enforce_on_create": false,
                       "required_status_checks": $checks,
@@ -144,7 +148,7 @@ jobs:
                   { "type": "non_fast_forward" }
                 ]
               }')
-      
+          
             local ID
             ID=$(find_ruleset_id_by_name "$NAME" || true)
             if [ -n "${ID:-}" ]; then
@@ -153,11 +157,12 @@ jobs:
                 echo "::warning::Delete failed, continuing to create a new ruleset anyway."
               }
             fi
-      
+          
             echo "Creating ruleset $NAME"
             gh api -i -X POST "/repos/$REPO_SLUG/rulesets" "${API[@]}" \
               --input <(printf '%s' "$BODY")
           }
+
       
           # Main: Merge only, checks: check-source-branch, format, code-quality, test
           replace_ruleset "Main" "main"  "$(jq -n '["merge"]')" \
