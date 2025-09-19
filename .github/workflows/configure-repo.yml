@@ -91,27 +91,63 @@ jobs:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           set -euo pipefail
+          set -x
+      
+          # Derive slug robustly. Prefer env set earlier, else fall back.
           REPO_SLUG="${REPO_SLUG:-$GITHUB_REPOSITORY}"
-          API=(-H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
-
+          echo "Using REPO_SLUG=$REPO_SLUG"
+      
+          # Show auth and who we are
+          gh auth status || true
+          gh api -i -H "Accept: application/vnd.github+json" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   "/rate_limit" || true
+      
+          # Prove the repo exists and we can read it
+          echo "Probing repo metadata..."
+          gh api -i -H "Accept: application/vnd.github+json" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   "/repos/$REPO_SLUG" || true
+      
+          # Probe rulesets endpoint and capture status + body
+          echo "Probing rulesets endpoint..."
+          PROBE_OUT=$(gh api -i -H "Accept: application/vnd.github+json" \
+                              -H "X-GitHub-Api-Version: 2022-11-28" \
+                              "/repos/$REPO_SLUG/rulesets" || true)
+          echo "$PROBE_OUT"
+      
+          STATUS=$(printf '%s' "$PROBE_OUT" | awk 'BEGIN{s=""} /^HTTP/{s=$2} END{print s}')
+          BODY=$(printf '%s' "$PROBE_OUT" | awk 'BEGIN{p=0} /^HTTP/{p=0} /^$/{p=1;next} {if(p)print}')
+      
+          echo "Rulesets HTTP status: ${STATUS:-unknown}"
+          if [ "${STATUS:-}" != "200" ]; then
+            echo "Rulesets list failed. Status=$STATUS" >&2
+            echo "Response body:" >&2
+            printf '%s\n' "$BODY" >&2
+            exit 1
+          fi
+      
+          # Helper to find id by name
           find_ruleset_id_by_name() {
             local NAME="$1"
-            gh api "/repos/$REPO_SLUG/rulesets" "${API[@]}" \
+            gh api "/repos/$REPO_SLUG/rulesets" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
               | jq -r ".[] | select(.name==\"$NAME\") | .id" | head -n1
           }
-
+      
+          # Build a checks array like [{"context":"format"}, ...]
           mk_checks_json() {
-            # stdin: newline-separated list of contexts; stdout: [{"context":"..."}...]
             jq -R -s 'split("\n") | map(select(length>0)) | map({context:.})'
           }
-
+      
           upsert_ruleset() {
             local NAME="$1" BRANCH="$2" ALLOWED_MERGES_JSON="$3"; shift 3
             local CHECKS_LIST=("$@")
-
+      
             local CHECKS_JSON
             CHECKS_JSON=$(printf '%s\n' "${CHECKS_LIST[@]}" | mk_checks_json)
-
+      
             RULES=$(jq -n \
               --argjson allowed "$ALLOWED_MERGES_JSON" \
               --argjson checks "$CHECKS_JSON" '
@@ -136,7 +172,7 @@ jobs:
                 },
                 { "type": "non_fast_forward" }
               ]')
-
+      
             BODY=$(jq -n \
               --arg name "$NAME" \
               --arg branch "refs/heads/$BRANCH" \
@@ -148,22 +184,28 @@ jobs:
                 conditions: { ref_name: { include: [$branch], exclude: [] } },
                 rules: $rules
               }')
-
+      
             ID=$(find_ruleset_id_by_name "$NAME" || true)
             if [ -n "${ID:-}" ]; then
-              gh api -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" "${API[@]}" \
-                --input <(printf '%s' "$BODY") >/dev/null
+              echo "Updating ruleset $NAME ($ID)"
+              gh api -i -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                --input <(printf '%s' "$BODY")
             else
-              gh api -X POST "/repos/$REPO_SLUG/rulesets" "${API[@]}" \
-                --input <(printf '%s' "$BODY") >/dev/null
+              echo "Creating ruleset $NAME"
+              gh api -i -X POST "/repos/$REPO_SLUG/rulesets" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                --input <(printf '%s' "$BODY")
             fi
           }
-
+      
           # Main: Merge only, checks: check-source-branch, format, code-quality, test
           upsert_ruleset "Main" "main" \
             "$(jq -n '["merge"]')" \
             "check-source-branch" "format" "code-quality" "test"
-
+      
           # Dev: Merge + Squash, checks: format, test
           upsert_ruleset "Dev" "dev" \
             "$(jq -n '["merge","squash"]')" \
