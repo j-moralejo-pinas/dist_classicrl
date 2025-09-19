@@ -1,0 +1,152 @@
+name: Configure repository
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure jq is available
+        run: |
+          if ! command -v jq >/dev/null; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Authenticate gh with admin token
+        run: echo "${{ secrets.ADMIN_TOKEN }}" | gh auth login --with-token
+
+      - name: Core repo settings
+        env:
+          REPO_NEW_NAME: dist_classicrl
+          REPO_DESC: This library contains a distributed implementation of classical q-learning. It may contain more implementations in the future.
+          REPO_WEB: ""
+          # JSON array string for topics. Example: ["python","ml","utils"]
+          REPO_TOPICS_JSON: '[]'
+        run: |
+          # Rename, metadata, switches
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY" \
+            -f "name=$REPO_NEW_NAME" \
+            -f "description=$REPO_DESC" \
+            -f "homepage=$REPO_WEB" \
+            -F "has_wiki=false" \
+            -F "has_issues=true" \
+            -F "has_projects=true" \
+            -F "has_discussions=false" \
+            -F "allow_merge_commit=true" \
+            -F "allow_rebase_merge=true" \
+            -F "allow_squash_merge=true" \
+            -F "allow_auto_merge=true" \
+            -F "allow_update_branch=true" \
+            -F "delete_branch_on_merge=true" \
+            -F "default_branch=main"
+
+          # Topics
+          printf '{"names": %s}\n' "$REPO_TOPICS_JSON" > /tmp/topics.json
+          gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY/topics" \
+            --input /tmp/topics.json
+
+      - name: Actions and workflow permissions
+        run: |
+          # Allow all actions and reusable workflows
+          gh api -X PUT "/repos/$GITHUB_REPOSITORY/actions/permissions" \
+            -f enabled=true -f allowed_actions=all
+
+          # Workflow permissions: Read and write
+          gh api -X PUT "/repos/$GITHUB_REPOSITORY/actions/permissions/workflow" \
+            -f default_workflow_permissions=write \
+            -F can_approve_pull_request_reviews=false
+
+          # Note: GitHub currently requires manual or org policy to force
+          # "Require approval for all external contributors" for fork PR runs.
+
+      - name: Create or update rulesets
+        run: |
+          set -euo pipefail
+
+          find_ruleset_id_by_name() {
+            local NAME="$1"
+            gh api "/repos/$GITHUB_REPOSITORY/rulesets" | jq -r ".[] | select(.name==\"$NAME\") | .id" | head -n1
+          }
+
+          upsert_ruleset() {
+            local NAME="$1"
+            local BRANCH="$2"
+            local ALLOWED_MERGES_JSON="$3"   # e.g. ["merge"] or ["merge","squash"]
+            local REQUIRED_CHECKS_JSON="$4"  # e.g. ["format","test"]
+
+            RULES=$(jq -n \
+              --argjson allowed "$ALLOWED_MERGES_JSON" \
+              --argjson checks "$REQUIRED_CHECKS_JSON" '
+              [
+                { "type": "deletion" },
+                {
+                  "type": "pull_request",
+                  "parameters": {
+                    "dismiss_stale_reviews_on_push": false,
+                    "require_code_owner_review": true,
+                    "required_approving_review_count": 1,
+                    "allowed_merge_methods": $allowed
+                  }
+                },
+                {
+                  "type": "required_status_checks",
+                  "parameters": {
+                    "strict_required_status_checks": true,
+                    "required_status_checks": ($checks | map({context: .}))
+                  }
+                },
+                { "type": "non_fast_forward" }
+              ]')
+
+            BODY=$(jq -n \
+              --arg name "$NAME" \
+              --arg branch "refs/heads/$BRANCH" \
+              --argjson rules "$RULES" '
+              {
+                name: $name,
+                target: "branch",
+                enforcement: "active",
+                conditions: { ref_name: { include: [$branch], exclude: [] } },
+                rules: $rules
+              }')
+
+            ID=$(find_ruleset_id_by_name "$NAME" || true)
+
+            if [ -n "${ID:-}" ]; then
+              echo "Updating ruleset $NAME ($ID)"
+              gh api -X PATCH "/repos/$GITHUB_REPOSITORY/rulesets/$ID" \
+                -H "Accept: application/vnd.github+json" \
+                --input <(printf '%s' "$BODY") >/dev/null
+            else
+              echo "Creating ruleset $NAME"
+              gh api -X POST "/repos/$GITHUB_REPOSITORY/rulesets" \
+                -H "Accept: application/vnd.github+json" \
+                --input <(printf '%s' "$BODY") >/devnull
+            fi
+          }
+
+          # Main ruleset
+          upsert_ruleset \
+            "Main" \
+            "main" \
+            "$(jq -n '["merge"]')" \
+            "$(jq -n '["check-source-branch","format","code-quality","test"]')"
+
+          # Dev ruleset
+          upsert_ruleset \
+            "Dev" \
+            "dev" \
+            "$(jq -n '["merge","squash"]')" \
+            "$(jq -n '["format","test"]')"
