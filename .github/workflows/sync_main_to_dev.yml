@@ -1,5 +1,4 @@
-# .github/workflows/open-sync-pr.yml
-name: Open PR main -> develop on release merge
+name: sync_main_to_dev
 
 on:
   pull_request:
