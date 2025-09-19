@@ -7,6 +7,8 @@ permissions:
 
 jobs:
   apply:
+    # Optional but safer: gate with an environment named "prod"
+    # Configure required reviewers and branch restrictions in Settings → Environments.
     environment: main
     runs-on: ubuntu-latest
 
@@ -25,24 +27,23 @@ jobs:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           REPO_NEW_NAME: dist_classicrl
           REPO_DESC: This library contains a distributed implementation of classical q-learning. It may contain more implementations in the future.
-          REPO_WEB: ""
+          REPO_WEB: ""   # leave empty to skip homepage
         run: |
           set -euo pipefail
+
           BODY=$(jq -n \
             --arg name "$REPO_NEW_NAME" \
             --arg desc "$REPO_DESC" \
-            --arg home "$REPO_WEB" '
-            {
-              name: $name,
-              description: $desc
-            }
-            + ( $home | length > 0 ? {homepage: $home} : {} )
-            + {
-                has_wiki: false,
-                allow_auto_merge: true,
-                allow_update_branch: true,
-                delete_branch_on_merge: true
-              }')
+            '{name:$name, description:$desc,
+              has_wiki:false,
+              allow_auto_merge:true,
+              allow_update_branch:true,
+              delete_branch_on_merge:true}')
+
+          if [ -n "${REPO_WEB:-}" ]; then
+            BODY=$(echo "$BODY" | jq --arg home "$REPO_WEB" '. + {homepage:$home}')
+          fi
+
           gh api --method PATCH -H "Accept: application/vnd.github+json" \
             "/repos/$GITHUB_REPOSITORY" --input <(printf '%s' "$BODY")
 
@@ -50,15 +51,17 @@ jobs:
           echo "REPO_SLUG=$REPO_SLUG" >> "$GITHUB_ENV"
 
       - name: Topics
+        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          REPO_TOPICS_JSON: '[]'   # e.g. '["python","rl","mpi"]' or '[]' to clear
+          REPO_TOPICS_JSON: '[]'  # set like '["python","rl","mpi"]' or '[]' to clear
         run: |
           gh api --method PUT -H "Accept: application/vnd.github+json" \
             "/repos/$REPO_SLUG/topics" \
             --input <(jq -n --argjson names "$REPO_TOPICS_JSON" '{names:$names}')
 
       - name: Workflow permissions
+        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
@@ -67,23 +70,32 @@ jobs:
             --input <(jq -n '{default_workflow_permissions:"write"}')
 
       - name: Create or update rulesets
+        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           set -euo pipefail
+
           find_ruleset_id_by_name() {
             local NAME="$1"
-            gh api "/repos/$REPO_SLUG/rulesets" | jq -r ".[] | select(.name==\"$NAME\") | .id" | head -n1
+            gh api "/repos/$REPO_SLUG/rulesets" \
+              -H "Accept: application/vnd.github+json" \
+              | jq -r ".[] | select(.name==\"$NAME\") | .id" | head -n1
           }
+
           upsert_ruleset() {
             local NAME="$1"
             local BRANCH="$2"
             local ALLOWED_MERGES_JSON="$3"
             local REQUIRED_CHECKS_JSON="$4"
-            RULES=$(jq -n --argjson allowed "$ALLOWED_MERGES_JSON" --argjson checks "$REQUIRED_CHECKS_JSON" '
+
+            RULES=$(jq -n \
+              --argjson allowed "$ALLOWED_MERGES_JSON" \
+              --argjson checks "$REQUIRED_CHECKS_JSON" '
               [
                 { "type": "deletion" },
-                { "type": "pull_request",
+                {
+                  "type": "pull_request",
                   "parameters": {
                     "dismiss_stale_reviews_on_push": false,
                     "require_code_owner_review": true,
@@ -91,7 +103,8 @@ jobs:
                     "allowed_merge_methods": $allowed
                   }
                 },
-                { "type": "required_status_checks",
+                {
+                  "type": "required_status_checks",
                   "parameters": {
                     "strict_required_status_checks": true,
                     "required_status_checks": ($checks | map({context: .}))
@@ -99,19 +112,33 @@ jobs:
                 },
                 { "type": "non_fast_forward" }
               ]')
-            BODY=$(jq -n --arg name "$NAME" --arg branch "refs/heads/$BRANCH" --argjson rules "$RULES" '
-              { name: $name, target: "branch", enforcement: "active",
-                conditions: { ref_name: { include: [$branch], exclude: [] } }, rules: $rules }')
+
+            BODY=$(jq -n \
+              --arg name "$NAME" \
+              --arg branch "refs/heads/$BRANCH" \
+              --argjson rules "$RULES" '
+              {
+                name: $name,
+                target: "branch",
+                enforcement: "active",
+                conditions: { ref_name: { include: [$branch], exclude: [] } },
+                rules: $rules
+              }')
+
             ID=$(find_ruleset_id_by_name "$NAME" || true)
             if [ -n "${ID:-}" ]; then
-              gh api -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" -H "Accept: application/vnd.github+json" \
+              gh api -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" \
+                -H "Accept: application/vnd.github+json" \
                 --input <(printf '%s' "$BODY") >/dev/null
             else
-              gh api -X POST "/repos/$REPO_SLUG/rulesets" -H "Accept: application/vnd.github+json" \
+              gh api -X POST "/repos/$REPO_SLUG/rulesets" \
+                -H "Accept: application/vnd.github+json" \
                 --input <(printf '%s' "$BODY") >/dev/null
             fi
           }
+
           upsert_ruleset "Main" "main" "$(jq -n '["merge"]')" \
             "$(jq -n '["check-source-branch","format","code-quality","test"]')"
+
           upsert_ruleset "Dev" "dev" "$(jq -n '["merge","squash"]')" \
             "$(jq -n '["format","test"]')"
