@@ -70,34 +70,40 @@ jobs:
             --input <(jq -n '{default_workflow_permissions:"write"}')
 
       - name: Create or update rulesets
-        if: env.REPO_SLUG != ''
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          REPO_SLUG: ${{ steps.core.outputs.slug }}
         run: |
           set -euo pipefail
+          API=(-H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
 
           find_ruleset_id_by_name() {
             local NAME="$1"
-            gh api "/repos/$REPO_SLUG/rulesets" \
-              -H "Accept: application/vnd.github+json" \
+            gh api "/repos/$REPO_SLUG/rulesets" "${API[@]}" \
               | jq -r ".[] | select(.name==\"$NAME\") | .id" | head -n1
           }
 
+          mk_checks_json() {
+            # stdin: newline-separated list of contexts; stdout: [{"context":"..."}...]
+            jq -R -s 'split("\n") | map(select(length>0)) | map({context:.})'
+          }
+
           upsert_ruleset() {
-            local NAME="$1"
-            local BRANCH="$2"
-            local ALLOWED_MERGES_JSON="$3"
-            local REQUIRED_CHECKS_JSON="$4"
+            local NAME="$1" BRANCH="$2" ALLOWED_MERGES_JSON="$3"; shift 3
+            local CHECKS_LIST=("$@")
+
+            local CHECKS_JSON
+            CHECKS_JSON=$(printf '%s\n' "${CHECKS_LIST[@]}" | mk_checks_json)
 
             RULES=$(jq -n \
               --argjson allowed "$ALLOWED_MERGES_JSON" \
-              --argjson checks "$REQUIRED_CHECKS_JSON" '
+              --argjson checks "$CHECKS_JSON" '
               [
                 { "type": "deletion" },
                 {
                   "type": "pull_request",
                   "parameters": {
-                    "dismiss_stale_reviews_on_push": false,
+                    "dismiss_stale_reviews_on_push": true,
                     "require_code_owner_review": true,
                     "required_approving_review_count": 1,
                     "allowed_merge_methods": $allowed
@@ -106,8 +112,9 @@ jobs:
                 {
                   "type": "required_status_checks",
                   "parameters": {
-                    "strict_required_status_checks": true,
-                    "required_status_checks": ($checks | map({context: .}))
+                    "do_not_enforce_on_create": false,
+                    "required_status_checks": $checks,
+                    "strict_required_status_checks_policy": true
                   }
                 },
                 { "type": "non_fast_forward" }
@@ -127,18 +134,20 @@ jobs:
 
             ID=$(find_ruleset_id_by_name "$NAME" || true)
             if [ -n "${ID:-}" ]; then
-              gh api -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" \
-                -H "Accept: application/vnd.github+json" \
+              gh api -X PATCH "/repos/$REPO_SLUG/rulesets/$ID" "${API[@]}" \
                 --input <(printf '%s' "$BODY") >/dev/null
             else
-              gh api -X POST "/repos/$REPO_SLUG/rulesets" \
-                -H "Accept: application/vnd.github+json" \
+              gh api -X POST "/repos/$REPO_SLUG/rulesets" "${API[@]}" \
                 --input <(printf '%s' "$BODY") >/dev/null
             fi
           }
 
-          upsert_ruleset "Main" "main" "$(jq -n '["merge"]')" \
-            "$(jq -n '["check-source-branch","format","code-quality","test"]')"
+          # Main: Merge only, checks: check-source-branch, format, code-quality, test
+          upsert_ruleset "Main" "main" \
+            "$(jq -n '["merge"]')" \
+            "check-source-branch" "format" "code-quality" "test"
 
-          upsert_ruleset "Dev" "dev" "$(jq -n '["merge","squash"]')" \
-            "$(jq -n '["format","test"]')"
+          # Dev: Merge + Squash, checks: format, test
+          upsert_ruleset "Dev" "dev" \
+            "$(jq -n '["merge","squash"]')" \
+            "format" "test"
